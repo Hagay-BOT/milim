@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#b5482e">
+<title>אוצר מילים — פסיכומטרי</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f1e7; --paper-deep:#efe7d6; --card:#fffdf8; --ink:#2c2620; --ink-soft:#7d7365;
+    --gold:#c9962f; --accent:#b5482e; --accent-deep:#8f3620; --green:#4e7d4e; --line:#e3d8c4;
+    --shadow:0 10px 30px -14px rgba(90,60,20,.4);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Heebo",sans-serif;background:var(--paper);color:var(--ink);
+    line-height:1.5;-webkit-tap-highlight-color:transparent;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:22px 18px 60px}
+  .hidden{display:none!important}
+  h1,h2,h3{font-family:"Frank Ruhl Libre",serif}
+  .kicker{font-size:.72rem;letter-spacing:.22em;color:var(--gold);font-weight:700;text-transform:uppercase}
+  .rule{height:2px;background:linear-gradient(90deg,var(--gold),transparent);margin:10px 0 20px;border-radius:2px}
+  button{font-family:inherit;cursor:pointer}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .topbar .back{background:transparent;border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-weight:500;color:var(--ink-soft)}
+  .topbar .back:hover{border-color:var(--ink-soft);color:var(--ink)}
+  .topbar .sp{flex:1}
+  .brand{font-family:"Frank Ruhl Libre",serif;font-weight:900;font-size:1.15rem}
+
+  /* buttons */
+  .btn{font-family:"Heebo";font-weight:700;font-size:1rem;border:none;border-radius:14px;padding:15px 22px;transition:.18s}
+  .btn-primary{background:linear-gradient(180deg,var(--gold),var(--accent));color:#fff;box-shadow:var(--shadow)}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .btn-primary:disabled{opacity:.45;transform:none;box-shadow:none;cursor:not-allowed}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink-soft)}
+  .btn-ghost:hover{border-color:var(--ink-soft);color:var(--ink)}
+  .btn-danger{background:var(--accent);color:#fff}
+  .btn-block{display:block;width:100%}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+
+  /* HOME */
+  .home-head{text-align:center;margin-bottom:6px}
+  .home-head h1{font-size:clamp(1.9rem,6vw,2.6rem);font-weight:900}
+  .home-head p{color:var(--ink-soft);font-size:.92rem}
+  .totalpill{display:inline-block;margin-top:8px;background:var(--paper-deep);border:1px solid var(--line);border-radius:999px;padding:5px 14px;font-size:.8rem;color:var(--ink-soft)}
+  .section-t{font-size:.78rem;font-weight:700;letter-spacing:.12em;color:var(--ink-soft);margin:24px 4px 12px;text-transform:uppercase}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+  .tile{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 12px 14px;text-align:center;transition:.15s;overflow:hidden}
+  .tile:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:var(--shadow)}
+  .tile .num{font-family:"Frank Ruhl Libre",serif;font-size:1.9rem;font-weight:900;line-height:1}
+  .tile .lbl{font-size:.72rem;color:var(--ink-soft);margin-top:3px}
+  .tile .mini{margin-top:10px;height:6px;border-radius:3px;background:var(--paper-deep);overflow:hidden;display:flex}
+  .tile .mini i{height:100%}
+  .tile .mini .s{background:var(--green)} .tile .mini .w{background:var(--accent)} .tile .mini .n{background:var(--gold)}
+  .big-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .big-tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:right;transition:.15s}
+  .big-tile:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:var(--shadow)}
+  .big-tile .emoji{font-size:1.5rem}
+  .big-tile h3{font-size:1.05rem;margin-top:6px}
+  .big-tile p{font-size:.78rem;color:var(--ink-soft)}
+
+  /* SCOPE screen */
+  .scope-head h1{font-size:clamp(1.7rem,5vw,2.2rem);font-weight:900}
+  .donut-wrap{display:flex;align-items:center;gap:20px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin:18px 0}
+  .donut{width:120px;height:120px;border-radius:50%;flex:0 0 auto;position:relative}
+  .donut::after{content:"";position:absolute;inset:16px;background:var(--card);border-radius:50%}
+  .donut .ck{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1}
+  .donut .ck b{font-family:"Frank Ruhl Libre",serif;font-size:1.6rem;font-weight:900;line-height:1}
+  .donut .ck span{font-size:.66rem;color:var(--ink-soft)}
+  .legend{flex:1;display:flex;flex-direction:column;gap:9px}
+  .legend div{display:flex;align-items:center;gap:8px;font-size:.86rem}
+  .legend i{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
+  .legend .s{background:var(--green)} .legend .w{background:var(--accent)} .legend .n{background:var(--gold)}
+  .legend b{margin-right:auto;font-weight:700}
+  .practice-btns{display:flex;flex-direction:column;gap:11px}
+  .pbtn{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 18px;text-align:right;transition:.15s;width:100%}
+  .pbtn:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:var(--shadow)}
+  .pbtn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+  .pbtn .ic{font-size:1.4rem;flex:0 0 auto}
+  .pbtn .tx{flex:1}
+  .pbtn .tx b{display:block;font-family:"Frank Ruhl Libre",serif;font-size:1.08rem}
+  .pbtn .tx span{font-size:.78rem;color:var(--ink-soft)}
+  .pbtn .cnt{background:var(--paper-deep);border-radius:999px;padding:3px 11px;font-weight:700;font-size:.85rem;flex:0 0 auto}
+
+  /* QUIZ */
+  .prog{height:6px;background:var(--paper-deep);border-radius:3px;overflow:hidden;margin-bottom:6px}
+  .prog i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--accent));transition:.3s}
+  .qmeta{display:flex;justify-content:space-between;font-size:.78rem;color:var(--ink-soft);margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 24px;box-shadow:var(--shadow);text-align:center}
+  .q-kind{font-size:.72rem;letter-spacing:.12em;color:var(--gold);font-weight:700;text-transform:uppercase;margin-bottom:14px}
+  .q-text{font-family:"Frank Ruhl Libre",serif;font-size:clamp(1.4rem,4.6vw,1.9rem);font-weight:700;line-height:1.35}
+  .answer-input{width:100%;margin-top:22px;font-family:"Frank Ruhl Libre",serif;font-size:1.5rem;text-align:center;color:var(--ink);background:var(--paper);border:2px solid var(--line);border-radius:14px;padding:14px;outline:none;transition:.2s}
+  .answer-input:focus{border-color:var(--gold)}
+  .answer-input:disabled{opacity:.75}
+  .actions{display:flex;gap:10px;margin-top:16px}
+  .actions .btn{flex:1}
+  .hint-btn{display:block;margin:14px auto 0;background:transparent;border:1px solid var(--line);color:var(--gold);font-family:"Heebo";font-weight:500;font-size:.88rem;padding:8px 18px;border-radius:999px}
+  .hint-btn:hover{border-color:var(--gold);background:rgba(201,150,47,.08)}
+  .hint-box{margin-top:12px;font-family:"Frank Ruhl Libre",serif;font-size:1.05rem;background:rgba(201,150,47,.1);border:1px dashed var(--gold);border-radius:12px;padding:12px}
+  .feedback{margin-top:14px;animation:rise .3s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .verdict{font-family:"Frank Ruhl Libre",serif;font-size:1.35rem;font-weight:700}
+  .verdict.ok{color:var(--green)} .verdict.no{color:var(--accent)}
+  .reveal{margin-top:8px;font-size:1.05rem}
+  .reveal b{font-family:"Frank Ruhl Libre",serif}
+  .was-right{margin-top:12px;background:transparent;border:1px solid var(--line);color:var(--ink-soft);border-radius:999px;padding:7px 16px;font-family:"Heebo";font-size:.85rem}
+  .was-right:hover{border-color:var(--green);color:var(--green)}
+  .assoc{margin-top:18px;text-align:right;border-top:1px dashed var(--line);padding-top:14px}
+  .assoc label{display:block;font-weight:500;font-size:.86rem;color:var(--gold);margin-bottom:7px}
+  .assoc textarea{width:100%;font-family:"Heebo";font-size:1rem;color:var(--ink);background:rgba(201,150,47,.06);border:1px solid var(--line);border-radius:10px;padding:9px 12px;resize:vertical;outline:none;line-height:1.5}
+  .assoc textarea:focus{border-color:var(--gold)}
+  .assoc-bar{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .assoc-bar button{font-weight:700;font-size:.85rem;color:var(--ink);background:rgba(201,150,47,.18);border:1px solid var(--gold);border-radius:999px;padding:7px 18px}
+  .assoc-bar .st{font-size:.82rem;color:var(--green);font-weight:500}
+  .del-live{margin-top:16px;width:100%;background:transparent;border:1px dashed var(--accent);color:var(--accent);border-radius:12px;padding:10px;font-family:"Heebo";font-weight:500;font-size:.9rem}
+  .del-live:hover{background:rgba(181,72,46,.07)}
+
+  /* RESULTS */
+  .res-head{text-align:center}
+  .score-num{font-family:"Frank Ruhl Libre",serif;font-size:4rem;font-weight:900;color:var(--accent);line-height:1}
+  .score-of{color:var(--ink-soft);margin-bottom:8px}
+  .miss-list{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+  .miss-row{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;gap:10px}
+  .miss-row b{font-family:"Frank Ruhl Libre",serif;min-width:34%}
+  .miss-row span{color:var(--ink-soft);font-size:.88rem}
+
+  /* strength list */
+  .strength-list{display:flex;flex-direction:column;gap:7px;max-height:360px;overflow:auto;margin-top:8px}
+  .str-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 13px}
+  .str-row.is-new{border-color:var(--gold);background:rgba(201,150,47,.06)}
+  .str-w{min-width:36%}
+  .str-w b{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:1.02rem;display:block}
+  .str-w span{color:var(--ink-soft);font-size:.8rem}
+  .dots{display:inline-flex;gap:4px}
+  .dots i{width:10px;height:10px;border-radius:50%;background:var(--paper-deep);border:1px solid var(--line)}
+  .dots i.on{background:linear-gradient(180deg,var(--gold),var(--accent));border-color:transparent}
+  .str-meter{flex:1;text-align:left}
+  .str-meter em{display:block;font-style:normal;font-size:.7rem;color:var(--ink-soft);margin-top:4px}
+
+  /* history trend */
+  .trend{display:flex;gap:7px;align-items:flex-end;height:84px;margin-top:12px}
+  .tbar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:4px}
+  .tbar i{display:block;width:100%;max-width:30px;background:linear-gradient(180deg,var(--gold),var(--accent));border-radius:5px 5px 0 0;min-height:5px}
+  .tbar em{font-style:normal;font-size:.64rem;color:var(--ink-soft)}
+
+  /* manage */
+  .manage-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow:auto;margin-top:10px}
+  .m-row{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 13px}
+  .m-row input{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
+  .m-row b{font-family:"Frank Ruhl Libre",serif;min-width:32%}
+  .m-row span{color:var(--ink-soft);font-size:.82rem;flex:1}
+  .m-row .u{font-size:.66rem;color:var(--gold);background:rgba(201,150,47,.1);border-radius:6px;padding:2px 7px;flex:0 0 auto}
+  .search{width:100%;font-family:"Heebo";font-size:1rem;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px;outline:none;margin-top:8px}
+  .search:focus{border-color:var(--gold)}
+  .msg{margin-top:14px;text-align:center;font-size:.9rem;font-weight:500}
+  .msg.ok{color:var(--green)} .msg.err{color:var(--accent)}
+  .add-form{display:flex;flex-direction:column;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
+  .add-form input{font-family:"Heebo";font-size:1rem;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none}
+  .add-form input:focus{border-color:var(--gold)}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:999px;font-size:.9rem;box-shadow:var(--shadow);z-index:50;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== HOME ===== -->
+  <section id="home">
+    <div class="home-head">
+      <div class="kicker">אוצר מילים</div>
+      <h1>פסיכומטרי — עברית</h1>
+      <p>המילון הרשמי · 10 יחידות</p>
+      <div class="totalpill" id="totalPill">—</div>
+    </div>
+
+    <div class="section-t">מצב כללי</div>
+    <div class="big-tiles">
+      <button class="big-tile" data-scope="global"><div class="emoji">📚</div><h3>כל המאגר</h3><p>סטטיסטיקה, חלשות וחדשות מכל היחידות</p></button>
+      <button class="big-tile" data-scope="random"><div class="emoji">🎲</div><h3>אקראי</h3><p>ערבוב מילים מכל היחידות לתרגול מהיר</p></button>
+    </div>
+
+    <div class="section-t">יחידות</div>
+    <div class="grid" id="unitGrid"></div>
+
+    <div class="section-t">כלים</div>
+    <div class="row">
+      <button class="btn btn-ghost" id="manageBtn">🗑 ניהול מילים</button>
+      <button class="btn btn-ghost" id="addBtn">➕ הוסף מילה</button>
+    </div>
+    <div style="margin-top:10px"><button class="btn btn-ghost btn-block" id="exportBtn">⬇ גיבוי אסוציאציות</button></div>
+    <p style="text-align:center;color:var(--ink-soft);font-size:.72rem;margin-top:18px" id="installHint"></p>
+  </section>
+
+  <!-- ===== SCOPE ===== -->
+  <section id="scope" class="hidden">
+    <div class="topbar"><button class="back" data-home>→ בית</button><div class="sp"></div><div class="brand" id="scopeBrand"></div></div>
+    <div class="scope-head"><h1 id="scopeTitle"></h1></div>
+    <div class="rule"></div>
+    <div class="donut-wrap">
+      <div class="donut" id="donut"><div class="ck"><b id="donutTotal">0</b><span>מילים</span></div></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="practice-btns">
+      <button class="pbtn" id="pbAll"><div class="ic">🔀</div><div class="tx"><b>תרגל הכל</b><span id="pbAllSub">כל המילים בערבוב</span></div><div class="cnt" id="cntAll">0</div></button>
+      <button class="pbtn" id="pbWeak"><div class="ic">💪</div><div class="tx"><b>תרגל חלשות</b><span>מילים שתרגלת וטעית בהן</span></div><div class="cnt" id="cntWeak">0</div></button>
+      <button class="pbtn" id="pbNew"><div class="ic">✨</div><div class="tx"><b>מילים חדשות</b><span>מילים שעוד לא תרגלת — ללמוד לראשונה</span></div><div class="cnt" id="cntNew">0</div></button>
+      <button class="pbtn" id="pbStats"><div class="ic">📊</div><div class="tx"><b>סטטיסטיקה מפורטת</b><span>חוזק כל מילה + היסטוריה</span></div><div class="cnt">›</div></button>
+    </div>
+  </section>
+
+  <!-- ===== QUIZ ===== -->
+  <section id="quiz" class="hidden">
+    <div class="topbar"><button class="back" id="quitQuiz">✕ יציאה</button><div class="sp"></div><div class="brand" id="quizScope"></div></div>
+    <div class="prog"><i id="progBar"></i></div>
+    <div class="qmeta"><span id="qCount"></span><span id="qLive"></span></div>
+    <div class="card">
+      <div class="q-kind">מהו הפירוש? כתוב את המילה</div>
+      <div class="q-text" id="qText"></div>
+      <input class="answer-input" id="answerInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="המילה…">
+      <div class="actions" id="answerActions">
+        <button class="btn btn-primary" id="checkBtn">בדיקה</button>
+        <button class="btn btn-ghost" id="skipBtn">לא יודע / הצג</button>
+      </div>
+      <button class="hint-btn" id="hintBtn">💡 רמז</button>
+      <div class="hint-box hidden" id="hintBox"></div>
+      <div class="feedback hidden" id="feedback"></div>
+    </div>
+  </section>
+
+  <!-- ===== RESULTS ===== -->
+  <section id="results" class="hidden">
+    <div class="topbar"><button class="back" id="resScope"></button><div class="sp"></div></div>
+    <div class="res-head">
+      <div class="kicker">סיכום</div>
+      <div class="score-num" id="finalScore">0</div>
+      <div class="score-of" id="finalOf"></div>
+    </div>
+    <div id="missWrap"><div class="section-t">כדאי לחזור על אלו</div><div class="miss-list" id="missList"></div></div>
+    <p class="msg ok hidden" id="allGood">מושלם — לא פספסת אף מילה! 🎉</p>
+    <div class="actions" style="margin-top:22px">
+      <button class="btn btn-primary" id="retryMissedBtn">תרגל את הטעויות</button>
+      <button class="btn btn-ghost" id="resBackBtn">חזרה</button>
+    </div>
+  </section>
+
+  <!-- ===== STATS ===== -->
+  <section id="stats" class="hidden">
+    <div class="topbar"><button class="back" id="statsBack">→ חזרה</button><div class="sp"></div><div class="brand" id="statsBrand"></div></div>
+    <div class="scope-head"><h1>סטטיסטיקה</h1></div>
+    <div class="rule"></div>
+    <div id="statsBody"></div>
+  </section>
+
+  <!-- ===== MANAGE ===== -->
+  <section id="manage" class="hidden">
+    <div class="topbar"><button class="back" data-home>→ בית</button><div class="sp"></div></div>
+    <div class="scope-head"><h1>ניהול מילים</h1></div>
+    <div class="rule"></div>
+    <p style="color:var(--ink-soft);font-size:.9rem">סמן מילים למחיקה. מחיקה נשמרת מקומית וניתן לשחזר.</p>
+    <input class="search" id="mSearch" placeholder="חפש מילה או פירוש…">
+    <div style="display:flex;align-items:center;gap:10px;margin:12px 2px;font-size:.85rem;color:var(--ink-soft)">
+      <span id="mCount">0 נבחרו</span><div style="flex:1"></div>
+      <button class="btn btn-ghost" style="padding:6px 12px" id="mRestore">שחזר מחיקות</button>
+    </div>
+    <div class="manage-list" id="manageList"></div>
+    <div class="actions" style="margin-top:16px"><button class="btn btn-danger" id="mDelete">מחק נבחרות</button></div>
+    <p class="msg hidden" id="mMsg"></p>
+  </section>
+
+  <!-- ===== ADD ===== -->
+  <section id="add" class="hidden">
+    <div class="topbar"><button class="back" data-home>→ בית</button><div class="sp"></div></div>
+    <div class="scope-head"><h1>הוסף מילה</h1></div>
+    <div class="rule"></div>
+    <p style="color:var(--ink-soft);font-size:.9rem">מילים שתוסיף נשמרות מקומית ומצטרפות למאגר הכללי.</p>
+    <div class="add-form">
+      <input id="addTerm" placeholder="המילה (עם ניקוד אם תרצה)">
+      <input id="addMeaning" placeholder="הפירוש">
+      <button class="btn btn-primary" id="addSave">הוסף למאגר</button>
+    </div>
+    <p class="msg hidden" id="addMsg"></p>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

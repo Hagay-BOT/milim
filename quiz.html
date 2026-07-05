@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מילים שלי — בחינה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2b2622;
+    --ink-soft:#6b6157;
+    --paper:#f4ece0;
+    --paper-deep:#e9ddca;
+    --card:#fbf6ec;
+    --accent:#b5482e;       /* terracotta */
+    --accent-deep:#8f3520;
+    --gold:#c9962f;
+    --green:#4f7a4d;
+    --line:#d8c9b2;
+    --shadow:rgba(60,42,20,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Heebo",sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 90% -10%, #fff7ea 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, #f0e2cb 0%, transparent 55%),
+      var(--paper);
+    min-height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:28px 18px;
+    position:relative;
+    overflow-x:hidden;
+  }
+  /* grain */
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;opacity:.04;z-index:99;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .stage{width:100%;max-width:680px;position:relative;z-index:1}
+
+  /* ---------- Card ---------- */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:22px;
+    box-shadow:0 24px 60px -28px var(--shadow), 0 2px 0 #fff inset;
+    padding:42px 40px 38px;
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";position:absolute;inset:14px;border:1px solid var(--line);
+    border-radius:14px;pointer-events:none;opacity:.5;
+  }
+
+  /* ---------- Masthead ---------- */
+  .masthead{text-align:center;margin-bottom:8px}
+  .kicker{
+    font-family:"Heebo";font-weight:500;letter-spacing:.32em;
+    font-size:.72rem;color:var(--accent);text-transform:uppercase;
+  }
+  .title{
+    font-family:"Frank Ruhl Libre",serif;font-weight:900;
+    font-size:clamp(2.4rem,7vw,3.5rem);line-height:1;margin:.18em 0 .12em;
+    letter-spacing:-.01em;
+  }
+  .rule{height:1px;background:linear-gradient(90deg,transparent,var(--line) 18%,var(--line) 82%,transparent);margin:18px 0 4px}
+  .sub{text-align:center;color:var(--ink-soft);font-size:.95rem;font-weight:300}
+
+  /* ---------- Start screen ---------- */
+  .bank{
+    margin-top:26px;display:flex;align-items:center;gap:16px;
+    border:1px solid var(--line);border-radius:16px;padding:20px 22px;
+    background:rgba(255,255,255,.45);transition:.25s;
+  }
+  .bank.ready{border-color:var(--green);background:rgba(79,122,77,.07)}
+  .bank.over{border-color:var(--accent);background:rgba(181,72,46,.06)}
+  .bank-ico{font-size:2.1rem}
+  .bank-count{font-family:"Frank Ruhl Libre",serif;font-size:1.3rem;font-weight:700}
+  .bank-sub{color:var(--ink-soft);font-size:.85rem;font-weight:300;margin-top:2px}
+  #fileInput{display:none}
+  .btn-update{
+    width:100%;margin-top:16px;background:var(--ink);color:var(--paper);
+    box-shadow:0 8px 18px -10px var(--ink);
+  }
+  .btn-update:hover{background:#1d1916;transform:translateY(-2px)}
+  .btn-start{width:100%;margin-top:20px}
+  .btn-start:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn-danger{background:var(--accent);color:#fff;box-shadow:0 8px 18px -8px var(--accent)}
+  .btn-danger:hover{background:var(--accent-deep);transform:translateY(-2px)}
+  .mini-row{display:flex;gap:10px;margin-top:14px}
+  .btn-mini{
+    flex:1;font-family:"Heebo";font-weight:500;font-size:.85rem;color:var(--ink-soft);
+    background:transparent;border:1px solid var(--line);border-radius:10px;
+    padding:11px 10px;cursor:pointer;transition:.2s;
+  }
+  .btn-mini:hover{color:var(--ink);border-color:var(--ink-soft)}
+  .btn-mini:disabled{opacity:.4;cursor:not-allowed}
+
+  /* manage screen */
+  .manage-toolbar{display:flex;align-items:center;gap:10px;margin:20px 2px 12px;font-size:.85rem;color:var(--ink-soft)}
+  .manage-toolbar #manageCount{font-weight:700;color:var(--ink);margin-left:auto}
+  .manage-toolbar .btn-mini{flex:0 0 auto;padding:7px 14px}
+  .manage-list{display:flex;flex-direction:column;gap:7px;max-height:300px;overflow:auto;padding-left:4px}
+  .manage-row{
+    display:flex;align-items:center;gap:12px;background:var(--card);
+    border:1px solid var(--line);border-radius:10px;padding:11px 14px;cursor:pointer;transition:.15s;
+  }
+  .manage-row:hover{border-color:var(--accent)}
+  .manage-row input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer;flex:0 0 auto}
+  .manage-row b{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:1.05rem;min-width:32%}
+  .manage-row span{color:var(--ink-soft);font-size:.9rem;flex:1}
+  .manage-row:has(input:checked){background:rgba(181,72,46,.07);border-color:var(--accent)}
+  .manage-msg{margin-top:16px;text-align:center;font-size:.92rem;color:var(--accent);font-weight:500}
+  .manage-msg.ok{color:var(--green)}
+
+  .opts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+  .chip{
+    font-family:"Heebo";font-size:.85rem;font-weight:500;color:var(--ink-soft);
+    background:var(--paper-deep);border:1px solid var(--line);border-radius:999px;
+    padding:9px 16px;cursor:pointer;transition:.2s;user-select:none;
+  }
+  .chip:hover{color:var(--ink);border-color:var(--accent)}
+  .chip[data-on="1"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  /* ---------- Quiz ---------- */
+  .hidden{display:none!important}
+  .progress{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 18px;font-size:.85rem;color:var(--ink-soft);font-weight:500}
+  .bar{height:6px;background:var(--paper-deep);border-radius:999px;overflow:hidden;flex:1;margin:0 14px;border:1px solid var(--line)}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--accent));transition:width .4s ease}
+
+  .prompt-label{font-size:.74rem;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);font-weight:500;text-align:center}
+  .prompt{
+    font-family:"Frank Ruhl Libre",serif;font-weight:700;
+    font-size:clamp(1.8rem,5.5vw,2.8rem);line-height:1.25;text-align:center;
+    margin:10px 0 4px;min-height:1.2em;
+  }
+  .answer-input{
+    width:100%;margin-top:24px;font-family:"Frank Ruhl Libre",serif;
+    font-size:1.7rem;text-align:center;padding:16px 14px;border:none;
+    border-bottom:2.5px solid var(--line);background:transparent;color:var(--ink);
+    transition:.2s;outline:none;
+  }
+  .answer-input:focus{border-color:var(--accent)}
+  .answer-input::placeholder{color:#b9ac96;font-weight:400}
+
+  .actions{display:flex;gap:12px;margin-top:26px}
+  .btn{
+    flex:1;font-family:"Heebo";font-weight:700;font-size:1.02rem;
+    padding:15px;border-radius:12px;border:none;cursor:pointer;transition:.18s;
+  }
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 8px 18px -8px var(--accent)}
+  .btn-primary:hover{background:var(--accent-deep);transform:translateY(-2px)}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+  .btn-ghost:hover{color:var(--ink);border-color:var(--ink-soft)}
+
+  /* hint (during the question) */
+  .hint-btn{
+    display:block;margin:16px auto 0;background:transparent;border:1px solid var(--line);
+    color:var(--gold);font-family:"Heebo";font-weight:500;font-size:.9rem;
+    padding:8px 18px;border-radius:999px;cursor:pointer;transition:.2s;
+  }
+  .hint-btn:hover{border-color:var(--gold);background:rgba(201,150,47,.08)}
+  .hint-box{
+    margin-top:14px;text-align:center;font-family:"Frank Ruhl Libre",serif;font-size:1.1rem;
+    color:var(--ink);background:rgba(201,150,47,.1);border:1px dashed var(--gold);
+    border-radius:12px;padding:14px 16px;line-height:1.5;animation:rise .3s ease;
+  }
+
+  /* feedback */
+  .feedback{margin-top:24px;text-align:center;animation:rise .3s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .verdict{font-family:"Frank Ruhl Libre",serif;font-size:1.5rem;font-weight:700;margin-bottom:6px}
+  .verdict.ok{color:var(--green)}
+  .verdict.no{color:var(--accent)}
+  .reveal{font-size:1.05rem;color:var(--ink)}
+  .reveal b{font-family:"Frank Ruhl Libre",serif;font-size:1.25rem}
+  .syns{font-size:.85rem;color:var(--ink-soft);margin-top:4px}
+  .was-right{
+    margin-top:14px;background:transparent;border:1px dashed var(--line);
+    color:var(--ink-soft);font-family:"Heebo";font-weight:500;font-size:.88rem;
+    padding:9px 16px;border-radius:999px;cursor:pointer;transition:.2s;
+  }
+  .was-right:hover{border-color:var(--green);color:var(--green)}
+
+  /* association editor (only inside feedback, after answering) */
+  .assoc{margin-top:20px;text-align:right;border-top:1px dashed var(--line);padding-top:16px}
+  .assoc-label{display:block;font-family:"Heebo";font-weight:500;font-size:.9rem;color:var(--gold);margin-bottom:8px}
+  .assoc-input{
+    width:100%;font-family:"Heebo";font-size:1rem;color:var(--ink);
+    background:rgba(201,150,47,.06);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;resize:vertical;outline:none;transition:.2s;line-height:1.5;
+  }
+  .assoc-input:focus{border-color:var(--gold);background:rgba(201,150,47,.1)}
+  .assoc-input::placeholder{color:#b9ac96;font-weight:300}
+  .assoc-bar{display:flex;align-items:center;gap:12px;margin-top:10px}
+  .assoc-save{
+    font-family:"Heebo";font-weight:700;font-size:.9rem;color:var(--ink);
+    background:rgba(201,150,47,.18);border:1px solid var(--gold);border-radius:999px;
+    padding:8px 20px;cursor:pointer;transition:.2s;
+  }
+  .assoc-save:hover{background:var(--gold);color:#fff}
+  .assoc-status{font-size:.85rem;font-weight:500;color:var(--green)}
+
+  /* stats / history screen */
+  .stat-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:22px}
+  .stat-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 8px;text-align:center}
+  .stat-card b{display:block;font-family:"Frank Ruhl Libre",serif;font-size:1.7rem;font-weight:900;line-height:1}
+  .stat-card span{font-size:.72rem;color:var(--ink-soft);font-weight:500}
+  .stat-card.ok b{color:var(--green)} .stat-card.warn b{color:var(--accent)} .stat-card.new b{color:var(--gold)}
+  .stat-h{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:1.12rem;margin:26px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .stat-empty{color:var(--ink-soft);font-size:.92rem;font-weight:300}
+  .last-run{background:rgba(201,150,47,.08);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .last-run .lr-main{font-size:1.05rem}
+  .last-run .lr-main b{font-family:"Frank Ruhl Libre",serif;font-size:1.3rem;color:var(--accent)}
+  .last-run .lr-sub{font-size:.82rem;color:var(--ink-soft);margin-top:4px}
+  .up{color:var(--green);font-weight:700} .down{color:var(--accent);font-weight:700} .flat{color:var(--ink-soft)}
+  .trend{display:flex;gap:8px;align-items:flex-end;height:96px;margin-top:14px;padding:0 2px}
+  .tbar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:4px}
+  .tbar i{display:block;width:100%;max-width:34px;background:linear-gradient(180deg,var(--gold),var(--accent));border-radius:5px 5px 0 0;min-height:6px}
+  .tbar em{font-style:normal;font-size:.68rem;color:var(--ink-soft);font-weight:500}
+  .strength-list{display:flex;flex-direction:column;gap:7px;max-height:340px;overflow:auto;padding-left:4px}
+  .str-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+  .str-row.is-new{border-color:var(--gold);background:rgba(201,150,47,.06)}
+  .str-word{min-width:34%}
+  .str-word b{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:1.05rem;display:block}
+  .str-word span{color:var(--ink-soft);font-size:.82rem}
+  .str-meter{flex:1;text-align:left}
+  .str-meter em{display:block;font-style:normal;font-size:.72rem;color:var(--ink-soft);margin-top:5px}
+  .dots{display:inline-flex;gap:4px}
+  .dots i{width:11px;height:11px;border-radius:50%;background:var(--paper-deep);border:1px solid var(--line)}
+  .dots i.on{background:linear-gradient(180deg,var(--gold),var(--accent));border-color:transparent}
+
+  /* ---------- Results ---------- */
+  .score-num{font-family:"Frank Ruhl Libre",serif;font-size:clamp(3.6rem,14vw,6rem);font-weight:900;line-height:1;text-align:center;color:var(--accent)}
+  .score-of{text-align:center;color:var(--ink-soft);font-size:1rem;margin-top:2px}
+  .miss-title{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:1.15rem;margin:26px 0 10px;text-align:center}
+  .miss-list{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow:auto;padding-left:4px}
+  .miss-row{display:flex;justify-content:space-between;gap:14px;background:var(--paper-deep);border:1px solid var(--line);border-radius:10px;padding:11px 15px;font-size:.95rem}
+  .miss-row b{font-family:"Frank Ruhl Libre",serif;font-weight:700}
+  .miss-row span{color:var(--ink-soft);text-align:left}
+  .all-good{text-align:center;color:var(--green);font-weight:500;margin-top:18px}
+  .summary{margin-top:22px;animation:rise .3s ease}
+  .sum-block{border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;margin-top:14px;background:rgba(255,255,255,.45)}
+  .sum-block.ok{border-color:rgba(79,122,77,.45);background:rgba(79,122,77,.06)}
+  .sum-block.hard{border-color:rgba(181,72,46,.4);background:rgba(181,72,46,.05)}
+  .sum-block h3{font-family:"Frank Ruhl Libre",serif;font-size:1.12rem;font-weight:700;margin-bottom:12px}
+  .sum-chips{display:flex;flex-wrap:wrap;gap:8px}
+  .sum-chips span{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:1rem;background:rgba(79,122,77,.12);border:1px solid rgba(79,122,77,.3);color:var(--green);border-radius:999px;padding:5px 13px}
+  .sum-rows{display:flex;flex-direction:column;gap:8px}
+  .sum-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+  .sum-row b{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:1.05rem;min-width:30%}
+  .sum-row span{color:var(--ink-soft);font-size:.9rem;flex:1}
+  .sum-row em{font-style:normal;font-size:.8rem;font-weight:700;color:var(--accent);background:rgba(181,72,46,.1);border-radius:999px;padding:3px 10px;white-space:nowrap}
+  .sum-hint{color:var(--ink-soft);font-size:.88rem;margin:14px 0 4px;font-weight:300}
+  .sum-empty{color:var(--ink-soft);font-size:.92rem}
+  .toggle-dir{font-size:.8rem;color:var(--ink-soft);text-align:center;margin-top:18px;cursor:pointer;font-weight:500}
+  .toggle-dir:hover{color:var(--accent)}
+  .err{color:var(--accent);text-align:center;margin-top:14px;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="card">
+
+    <!-- ===== START ===== -->
+    <section id="start">
+      <div class="masthead">
+        <div class="kicker">אוצר מילים · עברית</div>
+        <h1 class="title">מילים שלי</h1>
+      </div>
+      <div class="rule"></div>
+      <p class="sub">המאגר נקרא מתוך <code>words.txt</code>. ערוך את הקובץ, לחץ "עדכון מילים", והכל מתעדכן.</p>
+
+      <div class="bank" id="bank">
+        <span class="bank-ico">📚</span>
+        <div class="bank-txt">
+          <div class="bank-count" id="bankCount">המאגר עדיין ריק</div>
+          <div class="bank-sub" id="bankSub">לחץ "עדכון מילים" ובחר את words.txt (פעם אחת בלבד)</div>
+        </div>
+      </div>
+
+      <button class="btn btn-update" id="updateBtn">📂 עדכון מילים</button>
+      <input type="file" id="fileInput" accept=".txt,text/plain">
+
+      <div class="opts">
+        <div class="chip" id="chipDir" data-on="0">⇄ כיוון: פירוש ← מילה</div>
+        <div class="chip" id="chipShuffle" data-on="1">🔀 ערבוב</div>
+        <div class="chip" id="chipRetry" data-on="1">↻ חזרה על טעויות</div>
+      </div>
+
+      <button class="btn btn-primary btn-start" id="startBtn" disabled>התחל בחינה ←</button>
+      <div class="mini-row">
+        <button class="btn-mini" id="statsBtn">📈 סטטיסטיקה והיסטוריה</button>
+        <button class="btn-mini" id="manageBtn" disabled>🗑 ניהול / מחיקת מילים</button>
+        <button class="btn-mini" id="exportBtn">⬇ גיבוי אסוציאציות</button>
+      </div>
+      <p class="err hidden" id="startErr"></p>
+    </section>
+
+    <!-- ===== MANAGE / DELETE ===== -->
+    <section id="manage" class="hidden">
+      <div class="masthead">
+        <div class="kicker">ניהול מילים</div>
+        <h1 class="title" style="font-size:clamp(1.8rem,5vw,2.4rem)">מחיקת מילים</h1>
+      </div>
+      <div class="rule"></div>
+      <p class="sub">סמן את המילים להסרה ולחץ "מחק נבחרות". הפעולה מעדכנת גם את <code>words.txt</code>.</p>
+      <div class="manage-toolbar">
+        <span id="manageCount">0 נבחרו</span>
+        <button class="btn-mini" id="selAllBtn">בחר הכל</button>
+        <button class="btn-mini" id="selNoneBtn">נקה בחירה</button>
+      </div>
+      <div class="manage-list" id="manageList"></div>
+      <div class="actions" style="margin-top:20px">
+        <button class="btn btn-danger" id="deleteSelBtn">מחק נבחרות</button>
+        <button class="btn btn-ghost" id="manageBackBtn">חזרה</button>
+      </div>
+      <p class="manage-msg hidden" id="manageMsg"></p>
+    </section>
+
+    <!-- ===== STATS / HISTORY ===== -->
+    <section id="stats" class="hidden">
+      <div class="masthead">
+        <div class="kicker">מעקב התקדמות</div>
+        <h1 class="title" style="font-size:clamp(1.8rem,5vw,2.4rem)">סטטיסטיקה והיסטוריה</h1>
+      </div>
+      <div class="rule"></div>
+      <div id="statsBody"></div>
+      <div class="actions" style="margin-top:22px">
+        <button class="btn btn-primary" id="practiceWeakBtn">תרגל את החלשות</button>
+        <button class="btn btn-ghost" id="statsBackBtn">חזרה</button>
+      </div>
+    </section>
+
+    <!-- ===== QUIZ ===== -->
+    <section id="quiz" class="hidden">
+      <div class="progress">
+        <span id="counter">1 / 10</span>
+        <div class="bar"><i id="barFill"></i></div>
+        <span id="liveScore">✓ 0</span>
+      </div>
+      <div class="prompt-label" id="promptLabel">פירוש</div>
+      <div class="prompt" id="promptText"></div>
+
+      <input class="answer-input" id="answerInput" placeholder="כתוב כאן…" autocomplete="off" spellcheck="false">
+
+      <div id="answerActions" class="actions">
+        <button class="btn btn-primary" id="checkBtn">בדיקה</button>
+        <button class="btn btn-ghost" id="skipBtn">דלג / לא יודע</button>
+      </div>
+
+      <button class="hint-btn" id="hintBtn">💡 רמז</button>
+      <div class="hint-box hidden" id="hintBox"></div>
+
+      <div id="feedback" class="feedback hidden"></div>
+    </section>
+
+    <!-- ===== RESULTS ===== -->
+    <section id="results" class="hidden">
+      <div class="masthead"><div class="kicker">סיכום הבחינה</div></div>
+      <div class="score-num" id="finalScore">0</div>
+      <div class="score-of" id="finalOf">מתוך 0</div>
+      <div id="missWrap">
+        <div class="miss-title">כדאי לחזור על אלו ↓</div>
+        <div class="miss-list" id="missList"></div>
+      </div>
+      <p class="all-good hidden" id="allGood">מושלם — לא פספסת אף מילה! 🎉</p>
+      <div class="actions" style="margin-top:26px">
+        <button class="btn btn-primary" id="retryMissedBtn">תרגל את הטעויות</button>
+        <button class="btn btn-ghost" id="restartBtn">סבב חדש</button>
+      </div>
+      <button class="btn btn-update hidden" id="summaryBtn" style="margin-top:18px">📊 הצג סיכום מפורט</button>
+      <div id="summary" class="summary hidden"></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ---------- state ---------- */
+let allWords = [];      // {term, meaning, accepts:[...]}
+let deck = [];          // current round
+let idx = 0;
+let correct = 0;
+let missed = [];        // word objects missed this round
+let session = new Map();// term -> {w, attempts, mastered, firstTry} across the whole session
+let assoc = {};         // term -> personal association text (persisted in localStorage)
+let rawText = "";       // last-loaded raw words.txt content (for line-preserving edits)
+let answered = false;
+let sessionCommitted = false; // guards against double-counting a session into stats
+try{ assoc = JSON.parse(localStorage.getItem("hw_assoc")||"{}") || {}; }catch(e){ assoc={}; }
+
+/* ---------- persistent stats: per-word strength + session history ---------- */
+let stats = loadStats();
+function loadStats(){
+  try{ const s=JSON.parse(localStorage.getItem("hw_stats")||"{}");
+    return { words: s.words||{}, sessions: s.sessions||[] };
+  }catch(e){ return { words:{}, sessions:[] }; }
+}
+function saveStats(){ localStorage.setItem("hw_stats", JSON.stringify(stats)); }
+function wordRec(term){
+  return stats.words[term] || (stats.words[term]={seen:0,first:0,ever:0,wrong:0,level:0,last:0});
+}
+// commit the just-played session (the `session` Map) into long-term stats, once.
+function commitSession(){
+  if(sessionCommitted) return;
+  const entries=[...session.values()];
+  if(!entries.length) return;
+  const now=Date.now();
+  let correct=0, firstTry=0, struggled=0, newCount=0;
+  entries.forEach(e=>{
+    const rec=wordRec(e.w.term);
+    if(rec.seen===0) newCount++;
+    rec.seen++;
+    if(e.mastered && e.firstTry){ rec.first++; rec.ever++; rec.level=Math.min(5,rec.level+1); firstTry++; correct++; }
+    else if(e.mastered){ rec.ever++; rec.wrong+=Math.max(0,e.attempts-1); rec.level=Math.max(0,rec.level-1); struggled++; correct++; }
+    else { rec.wrong++; rec.level=Math.max(0,rec.level-1); }
+    rec.last=now;
+  });
+  stats.sessions.push({t:now, total:entries.length, correct, firstTry, struggled, newCount});
+  if(stats.sessions.length>200) stats.sessions=stats.sessions.slice(-200);
+  saveStats();
+  sessionCommitted=true;
+}
+let dir = "m2t";        // m2t: show meaning, type term | t2m: show term, type meaning
+const opt = { shuffle:true, retry:true };
+
+/* ---------- elements ---------- */
+const $ = s => document.querySelector(s);
+const startSec=$("#start"), quizSec=$("#quiz"), resSec=$("#results");
+
+/* ---------- text normalization (flexible matching) ---------- */
+function norm(s){
+  return (s||"")
+    .replace(/[֑-ׇ]/g,"")      // strip niqqud + cantillation
+    .replace(/[.,;:!?'"’”“`׳״\-–—]/g,"") // punctuation
+    .replace(/\s+/g," ")
+    .trim()
+    .replace(/ך$/,"כ").replace(/ם$/,"מ").replace(/ן$/,"נ")
+    .replace(/ף$/,"פ").replace(/ץ$/,"צ"); // final letters → normal
+}
+
+/* ---------- parsing ---------- */
+function parse(text){
+  const out=[];
+  text.split(/\r?\n/).forEach(raw=>{
+    const line=raw.trim();
+    if(!line || line.startsWith("#")) return;
+    const sep = line.includes(" - ") ? " - " : (line.includes("-")? "-" : (line.includes("=")?"=":null));
+    if(!sep) return;
+    let [term, rest] = splitFirst(line, sep);
+    if(rest===null) return;
+    term=term.trim();
+    let accepts=[];
+    let meaning=rest;
+    if(rest.includes("|")){
+      const parts=rest.split("|").map(p=>p.trim());
+      meaning=parts.shift();
+      accepts=parts;
+    }
+    meaning=meaning.trim();
+    if(term && meaning) out.push({term, meaning, accepts});
+  });
+  return out;
+}
+function splitFirst(str, sep){
+  const i=str.indexOf(sep);
+  if(i<0) return [str,null];
+  return [str.slice(0,i), str.slice(i+sep.length)];
+}
+
+/* ---------- tiny IndexedDB store for the file handle ---------- */
+const IDB={
+  open(){return new Promise((res,rej)=>{const r=indexedDB.open("hebrew-words",1);
+    r.onupgradeneeded=()=>r.result.createObjectStore("kv");
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);});},
+  async set(k,v){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error);});},
+  async get(k){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction("kv","readonly");const q=t.objectStore("kv").get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});}
+};
+
+/* ---------- file loading via File System Access API (with fallback) ---------- */
+const fileInput=$("#fileInput");
+const supportsFSA = "showOpenFilePicker" in window;
+let fileHandle=null;
+
+// fallback: classic file input (used when FSA unavailable)
+fileInput.addEventListener("change", e=>{ if(e.target.files[0]) readFile(e.target.files[0]); });
+function readFile(file){
+  const r=new FileReader();
+  r.onload=()=>applyText(r.result);
+  r.readAsText(file,"UTF-8");
+}
+
+async function ensurePermission(handle){
+  const opts={mode:"read"};
+  if(await handle.queryPermission(opts)==="granted") return true;
+  return (await handle.requestPermission(opts))==="granted";
+}
+
+async function updateWords(){
+  hideErr();
+  try{
+    if(supportsFSA){
+      if(!fileHandle){ fileHandle = await IDB.get("wordsHandle"); }
+      if(!fileHandle){
+        const [h] = await window.showOpenFilePicker({
+          types:[{description:"Text",accept:{"text/plain":[".txt"]}}],
+          multiple:false
+        });
+        fileHandle=h; await IDB.set("wordsHandle",h);
+      }
+      if(!(await ensurePermission(fileHandle))){ showErr("צריך הרשאה כדי לקרוא את הקובץ."); return; }
+      const file=await fileHandle.getFile();
+      applyText(await file.text(), file.name);
+    }else{
+      fileInput.click(); // browser without FSA → pick file
+    }
+  }catch(err){
+    if(err && err.name==="AbortError") return; // user closed picker
+    // stale handle (file moved/renamed) → re-pick next time
+    fileHandle=null; await IDB.set("wordsHandle",null);
+    showErr("לא הצלחתי לקרוא את הקובץ. לחץ שוב ובחר את words.txt.");
+  }
+}
+
+function applyText(text,name){
+  const words=parse(text);
+  if(words.length===0){ showErr("לא נמצאו מילים בקובץ. כל שורה צריכה להיות בפורמט:  מילה - פירוש"); return; }
+  allWords=words;
+  rawText=text;
+  localStorage.setItem("hw_cache", JSON.stringify(words)); // so the bank shows on reopen
+  reflectBank(words.length, name);
+}
+
+function reflectBank(n,name){
+  $("#bank").classList.add("ready");
+  $("#bankCount").textContent = `${n} מילים במאגר`;
+  $("#bankSub").textContent = name ? `נטען מ-${name} · לחץ "עדכון מילים" אחרי כל שינוי` : `לחץ "עדכון מילים" אחרי כל שינוי בקובץ`;
+  $("#startBtn").disabled = false;
+  $("#manageBtn").disabled = false;
+}
+
+function showErr(msg){ const e=$("#startErr"); e.textContent=msg; e.classList.remove("hidden"); }
+function hideErr(){ $("#startErr").classList.add("hidden"); }
+
+$("#updateBtn").addEventListener("click", updateWords);
+$("#startBtn").addEventListener("click", ()=>{ if(allWords.length) startRound(allWords); });
+
+/* ---------- stats / history screen ---------- */
+const LEVEL_LABEL=["חדשה","חלשה מאוד","חלשה","בינונית","טובה","חזקה מאוד"];
+function fmtDate(t){
+  try{ const d=new Date(t);
+    return d.toLocaleDateString("he-IL",{day:"2-digit",month:"2-digit"})+" · "+d.toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"});
+  }catch(e){ return ""; }
+}
+function dots(level){
+  let s='<span class="dots">';
+  for(let i=1;i<=5;i++) s+=`<i class="${i<=level?'on':''}"></i>`;
+  return s+'</span>';
+}
+// practice priority: new words first (-1), then by ascending level, then oldest first
+function priority(w){ const r=stats.words[w.term]; return (!r||r.seen===0)?-1:r.level; }
+function lastSeen(w){ const r=stats.words[w.term]; return r?r.last:0; }
+
+function openStats(){
+  hide(startSec); hide(resSec); show($("#stats"));
+  renderStats();
+}
+function renderStats(){
+  const body=$("#statsBody");
+  const s=stats.sessions;
+  // ----- word groups (only words currently in the bank) -----
+  let strong=0, weak=0, fresh=0;
+  allWords.forEach(w=>{ const r=stats.words[w.term];
+    if(!r||r.seen===0) fresh++; else if(r.level>=3) strong++; else weak++; });
+
+  let html="";
+  // summary cards
+  html+=`<div class="stat-cards">
+    <div class="stat-card"><b>${allWords.length}</b><span>מילים במאגר</span></div>
+    <div class="stat-card ok"><b>${strong}</b><span>חזקות</span></div>
+    <div class="stat-card warn"><b>${weak}</b><span>לחיזוק</span></div>
+    <div class="stat-card new"><b>${fresh}</b><span>חדשות</span></div>
+  </div>`;
+
+  // history + comparison to previous
+  html+=`<h3 class="stat-h">היסטוריית משחקים</h3>`;
+  if(s.length===0){
+    html+=`<p class="stat-empty">עדיין לא שיחקת סבב מלא — סיים בחינה כדי להתחיל לצבור היסטוריה.</p>`;
+  }else{
+    const last=s[s.length-1], prev=s.length>1?s[s.length-2]:null;
+    const pct=x=>x.total?Math.round(100*x.correct/x.total):0;
+    let cmp="";
+    if(prev){
+      const d=pct(last)-pct(prev);
+      const arrow=d>0?`<span class="up">▲ ${d}%</span>`:d<0?`<span class="down">▼ ${-d}%</span>`:`<span class="flat">ללא שינוי</span>`;
+      cmp=`השוואה לפעם הקודמת: ${arrow}`;
+    }
+    html+=`<div class="last-run">
+      <div class="lr-main"><b>${last.correct}/${last.total}</b> נכונות · ${last.firstTry} בפעם הראשונה${last.newCount?` · ${last.newCount} חדשות`:""}</div>
+      <div class="lr-sub">${fmtDate(last.t)}${cmp?` · ${cmp}`:""}</div>
+    </div>`;
+    // mini trend of recent sessions
+    const recent=s.slice(-8);
+    html+=`<div class="trend">`+recent.map(x=>{
+      const p=x.total?Math.round(100*x.correct/x.total):0;
+      return `<div class="tbar" title="${fmtDate(x.t)} — ${x.correct}/${x.total}"><i style="height:${Math.max(6,p)}%"></i><em>${p}%</em></div>`;
+    }).join("")+`</div>`;
+  }
+
+  // word strength table (weakest first)
+  html+=`<h3 class="stat-h">חוזק מילים · מהחלש לחזק</h3>`;
+  if(allWords.length===0){
+    html+=`<p class="stat-empty">טען מילים כדי לראות את חוזק המילים.</p>`;
+  }else{
+    const sorted=allWords.slice().sort((a,b)=> priority(a)-priority(b) || lastSeen(a)-lastSeen(b));
+    html+=`<div class="strength-list">`+sorted.map(w=>{
+      const r=stats.words[w.term];
+      const lvl=(!r||r.seen===0)?0:r.level;
+      const meta=(!r||r.seen===0)?`טרם תורגלה`:`נראתה ${r.seen}× · ${r.first} ראשונה · ${r.wrong} טעויות`;
+      const isNew=(!r||r.seen===0);
+      return `<div class="str-row${isNew?' is-new':''}">
+        <div class="str-word"><b>${escapeHtml(w.term)}</b><span>${escapeHtml(w.meaning)}</span></div>
+        <div class="str-meter">${dots(lvl)}<em>${meta}</em></div>
+      </div>`;
+    }).join("")+`</div>`;
+  }
+  body.innerHTML=html;
+}
+
+function practiceWeak(){
+  if(!allWords.length) return;
+  const sorted=allWords.slice().sort((a,b)=> priority(a)-priority(b) || lastSeen(a)-lastSeen(b));
+  let pick=sorted.filter(w=>{ const r=stats.words[w.term]; return !r||r.seen===0||r.level<=2; });
+  if(!pick.length) pick=sorted.slice(0, Math.min(10,sorted.length)); // all strong → just review the 10 oldest-weakest
+  const capped = pick.length>15;
+  pick=pick.slice(0,15);
+  if(capped) log_capped(pick.length, sorted.length);
+  startRound(pick, true);
+}
+function log_capped(n,total){ /* keep the session focused; user sees count on screen */ }
+
+$("#statsBtn").addEventListener("click",openStats);
+$("#statsBackBtn").addEventListener("click",()=>{ hide($("#stats")); show(startSec); });
+$("#practiceWeakBtn").addEventListener("click",practiceWeak);
+
+// on load: show cached bank (from last session) so user sees their words immediately
+(function restore(){
+  try{
+    const c=JSON.parse(localStorage.getItem("hw_cache")||"[]");
+    if(Array.isArray(c) && c.length){ allWords=c; reflectBank(c.length);
+      $("#bankSub").textContent='מהפעם הקודמת · לחץ "עדכון מילים" לרענון מהקובץ';
+    }
+  }catch(e){}
+})();
+
+/* ---------- options chips ---------- */
+function bindChip(id, key, onToggle){
+  $(id).addEventListener("click",()=>{
+    const el=$(id); const on=el.dataset.on==="1"?"0":"1"; el.dataset.on=on;
+    if(onToggle) onToggle(on==="1");
+  });
+}
+bindChip("#chipShuffle","shuffle",v=>opt.shuffle=v);
+bindChip("#chipRetry","retry",v=>opt.retry=v);
+$("#chipDir").addEventListener("click",()=>{
+  const el=$("#chipDir"); const on=el.dataset.on==="1"?"0":"1"; el.dataset.on=on;
+  dir = on==="1" ? "t2m" : "m2t";
+  el.textContent = dir==="m2t" ? "⇄ כיוון: פירוש ← מילה" : "⇄ כיוון: מילה ← פירוש";
+});
+
+/* ---------- round flow ---------- */
+function startRound(words, fresh=true){
+  if(fresh){
+    if(!sessionCommitted && session.size>0) commitSession(); // save the partial previous session
+    session=new Map(); sessionCommitted=false;               // reset attempt-tracking for a brand-new session
+  }
+  deck = words.slice();
+  if(opt.shuffle) shuffle(deck);
+  idx=0; correct=0; missed=[];
+  show(quizSec); hide(startSec); hide(resSec);
+  renderCard();
+}
+function sess(w){
+  if(!session.has(w.term)) session.set(w.term,{w,attempts:0,mastered:false,firstTry:false});
+  return session.get(w.term);
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} }
+
+function renderCard(){
+  answered=false;
+  const w=deck[idx];
+  const showMeaning = dir==="m2t";
+  $("#promptLabel").textContent = showMeaning ? "פירוש" : "מילה";
+  $("#promptText").textContent  = showMeaning ? w.meaning : w.term;
+  const ai=$("#answerInput");
+  ai.value=""; ai.disabled=false; ai.placeholder = showMeaning ? "מהי המילה?" : "מה הפירוש?";
+  $("#feedback").classList.add("hidden"); $("#feedback").innerHTML="";
+  $("#hintBox").classList.add("hidden"); $("#hintBox").textContent="";
+  $("#hintBtn").classList.remove("hidden");
+  $("#answerActions").classList.remove("hidden");
+  $("#counter").textContent = `${idx+1} / ${deck.length}`;
+  $("#liveScore").textContent = `✓ ${correct}`;
+  $("#barFill").style.width = `${(idx/deck.length)*100}%`;
+  ai.focus();
+}
+
+function acceptedAnswers(w){
+  if(dir==="m2t") return [w.term];               // typing the term
+  return [w.meaning, ...w.accepts];               // typing the meaning (+ synonyms)
+}
+function check(){
+  if(answered) return;
+  const w=deck[idx];
+  const guess=norm($("#answerInput").value);
+  if(!guess){ $("#answerInput").focus(); return; }
+  const targets=acceptedAnswers(w).map(norm);
+  const ok = targets.includes(guess);
+  finishCard(ok, false);
+}
+function skip(){ if(!answered) finishCard(false, true); }
+
+function finishCard(ok, skipped){
+  answered=true;
+  $("#answerInput").disabled=true;
+  $("#answerActions").classList.add("hidden");
+  $("#hintBtn").classList.add("hidden"); $("#hintBox").classList.add("hidden");
+  const w=deck[idx];
+  const e=sess(w);
+  e.attempts++;                                  // count this attempt
+  if(ok){ correct++; e.mastered=true; if(e.attempts===1) e.firstTry=true; }
+  else { missed.push(w); }
+  $("#liveScore").textContent = `✓ ${correct}`;
+
+  const rightStr = dir==="m2t" ? w.term : w.meaning;
+  const fb=$("#feedback");
+  const synLine = (dir==="t2m" && w.accepts.length)
+      ? `<div class="syns">מתקבל גם: ${w.accepts.join(" · ")}</div>` : "";
+  fb.innerHTML = `
+    <div class="verdict ${ok?'ok':'no'}">${ok?"יפה! ✓":(skipped?"בוא נראה →":"לא בדיוק")}</div>
+    ${ok?"":`<div class="reveal">${dir==='m2t'?'המילה':'הפירוש'}: <b>${escapeHtml(rightStr)}</b></div>${synLine}`}
+    ${ok?"":`<button class="was-right" id="wasRight">בעצם הייתי צודק — סמן כנכון</button>`}
+    <div class="assoc">
+      <label class="assoc-label" for="assocInput">💡 האסוציאציה שלי ל"${escapeHtml(w.term)}"</label>
+      <textarea class="assoc-input" id="assocInput" rows="2" placeholder="כתוב קישור / תמונה / משחק מילים שיעזרו לך לזכור…">${escapeHtml(assoc[w.term]||"")}</textarea>
+      <div class="assoc-bar">
+        <button class="assoc-save" id="assocSave">שמירה</button>
+        <span class="assoc-status" id="assocStatus"></span>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:18px">
+      <button class="btn btn-primary" id="nextBtn">${idx+1<deck.length?"הבא ←":"לסיכום"}</button>
+    </div>`;
+  fb.classList.remove("hidden");
+  function persistAssoc(){
+    const ta=$("#assocInput"); if(!ta) return;
+    const v=ta.value.trim();
+    if(v) assoc[w.term]=v; else delete assoc[w.term];
+    localStorage.setItem("hw_assoc", JSON.stringify(assoc));
+  }
+  $("#assocSave").addEventListener("click",()=>{ persistAssoc(); $("#assocStatus").textContent="נשמר ✓"; });
+  $("#assocInput").addEventListener("input",()=>{ $("#assocStatus").textContent=""; });
+  if(!ok){
+    $("#wasRight").addEventListener("click",()=>{
+      correct++; missed.pop();
+      e.mastered=true; e.firstTry=(e.attempts===1); // the auto-check was too strict
+      $("#liveScore").textContent=`✓ ${correct}`;
+      $("#wasRight").outerHTML=`<div class="syns" style="color:var(--green)">סומן כנכון ✓</div>`;
+      $(".verdict").className="verdict ok"; $(".verdict").textContent="יפה! ✓";
+    });
+  }
+  $("#nextBtn").addEventListener("click",()=>{ persistAssoc(); next(); });
+}
+function next(){
+  idx++;
+  if(idx<deck.length) renderCard();
+  else finishRound();
+}
+
+function finishRound(){
+  hide(quizSec); show(resSec);
+  $("#finalScore").textContent=correct;
+  $("#finalOf").textContent=`מתוך ${deck.length}`;
+  const list=$("#missList");
+  // reset summary view each time
+  $("#summary").classList.add("hidden"); $("#summary").innerHTML="";
+  if(missed.length===0){
+    commitSession();                             // session complete → record into stats/history
+    $("#missWrap").classList.add("hidden");
+    $("#allGood").classList.remove("hidden");
+    $("#retryMissedBtn").classList.add("hidden");
+    $("#summaryBtn").classList.remove("hidden"); // צדקת בכל המילים → אפשר סיכום מפורט
+  }else{
+    $("#missWrap").classList.remove("hidden");
+    $("#allGood").classList.add("hidden");
+    $("#retryMissedBtn").classList.remove("hidden");
+    $("#summaryBtn").classList.add("hidden");
+    list.innerHTML=missed.map(w=>`<div class="miss-row"><b>${escapeHtml(w.term)}</b><span>${escapeHtml(w.meaning)}</span></div>`).join("");
+  }
+}
+
+function showSummary(){
+  const entries=[...session.values()];
+  const first=entries.filter(e=>e.mastered && e.firstTry);
+  const hard =entries.filter(e=>e.mastered && !e.firstTry).sort((a,b)=>b.attempts-a.attempts);
+  let html="";
+  html+=`<div class="sum-block ok"><h3>✅ הצלחת בפעם הראשונה · ${first.length}</h3>`;
+  html+= first.length
+    ? `<div class="sum-chips">${first.map(e=>`<span>${escapeHtml(e.w.term)}</span>`).join("")}</div>`
+    : `<p class="sum-empty">— עדיין אף אחת</p>`;
+  html+=`</div>`;
+  html+=`<div class="sum-block hard"><h3>🔁 לקח לך יותר מניסיון אחד · ${hard.length}</h3>`;
+  if(hard.length){
+    html+=`<div class="sum-rows">${hard.map(e=>`<div class="sum-row"><b>${escapeHtml(e.w.term)}</b><span>${escapeHtml(e.w.meaning)}</span><em>${e.attempts} ניסיונות</em></div>`).join("")}</div>`;
+    html+=`<p class="sum-hint">המילים האלו עוד לא יושבות חזק — כדאי לתרגל אותן שוב.</p>`;
+    html+=`<button class="btn btn-primary" id="practiceHardBtn" style="margin-top:6px">תרגל שוב את אלו שהתקשית בהם (${hard.length})</button>`;
+  }else{
+    html+=`<p class="sum-empty">מושלם — לא נתקעת באף מילה! 🎉</p>`;
+  }
+  html+=`</div>`;
+  const box=$("#summary");
+  box.innerHTML=html; box.classList.remove("hidden");
+  $("#summaryBtn").classList.add("hidden");
+  const pb=$("#practiceHardBtn");
+  if(pb) pb.addEventListener("click",()=>startRound(hard.map(e=>e.w), true));
+}
+
+/* ---------- buttons ---------- */
+$("#checkBtn").addEventListener("click",check);
+$("#skipBtn").addEventListener("click",skip);
+$("#answerInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter" && !answered){ e.preventDefault(); check(); }
+});
+// Enter advances after answering, from anywhere (input is disabled by then) —
+// except while typing in the association box, where Enter makes a new line.
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Enter" || !answered) return;
+  if(quizSec.classList.contains("hidden")) return;
+  if(e.target && e.target.id==="assocInput") return;
+  e.preventDefault();
+  const n=$("#nextBtn"); if(n) n.click();
+});
+$("#restartBtn").addEventListener("click",()=>startRound(allWords, true));
+$("#retryMissedBtn").addEventListener("click",()=>{ if(missed.length) startRound(missed.slice(), false); }); // keep tracking attempts
+$("#summaryBtn").addEventListener("click",showSummary);
+
+$("#hintBtn").addEventListener("click",()=>{
+  const a=assoc[deck[idx].term];
+  const box=$("#hintBox");
+  box.textContent = a ? `💡 ${a}` : "עדיין לא כתבת אסוציאציה למילה הזו — תוכל להוסיף אחרי שתענה.";
+  box.classList.remove("hidden");
+});
+
+/* ---------- manage / delete words ---------- */
+function openManager(){
+  hide(startSec); hide(resSec); show($("#manage"));
+  $("#manageMsg").classList.add("hidden");
+  buildManageList();
+}
+function buildManageList(){
+  const list=$("#manageList");
+  list.innerHTML=allWords.map((w,i)=>
+    `<label class="manage-row">
+      <input type="checkbox" class="del-chk" data-term="${escapeHtml(w.term)}">
+      <b>${escapeHtml(w.term)}</b><span>${escapeHtml(w.meaning)}</span>
+    </label>`).join("");
+  list.querySelectorAll(".del-chk").forEach(c=>c.addEventListener("change",updateSelCount));
+  updateSelCount();
+}
+function selectedTerms(){
+  return [...document.querySelectorAll(".del-chk:checked")].map(c=>c.dataset.term);
+}
+function updateSelCount(){
+  $("#manageCount").textContent = `${selectedTerms().length} נבחרו`;
+}
+
+function rebuildFileText(deleteSet){
+  if(rawText){   // line-preserving: keep comments, blanks, synonyms
+    return rawText.split(/\r?\n/).filter(line=>{
+      const t=line.trim();
+      if(!t || t.startsWith("#")) return true;
+      const sep = t.includes(" - ")?" - ":(t.includes("-")?"-":(t.includes("=")?"=":null));
+      if(!sep) return true;
+      const term=t.slice(0,t.indexOf(sep)).trim();
+      return !deleteSet.has(term);
+    }).join("\r\n");
+  }
+  // fallback: regenerate from the (already filtered) word list
+  return allWords.map(w=> w.accepts.length
+      ? `${w.term} - ${w.meaning} | ${w.accepts.join(" | ")}`
+      : `${w.term} - ${w.meaning}`).join("\r\n");
+}
+async function writeToFile(text){
+  if(!supportsFSA) return false;
+  if(!fileHandle) fileHandle = await IDB.get("wordsHandle");
+  if(!fileHandle) return false;
+  if(await fileHandle.queryPermission({mode:"readwrite"})!=="granted"){
+    if(await fileHandle.requestPermission({mode:"readwrite"})!=="granted") return false;
+  }
+  const ws=await fileHandle.createWritable();
+  await ws.write(text); await ws.close();
+  return true;
+}
+function downloadText(name,text){
+  const blob=new Blob([text],{type:"text/plain;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=name; document.body.appendChild(a); a.click();
+  a.remove(); URL.revokeObjectURL(url);
+}
+
+async function deleteSelected(){
+  const terms=selectedTerms();
+  const msg=$("#manageMsg"); msg.classList.remove("hidden"); msg.className="manage-msg";
+  if(!terms.length){ msg.textContent="לא נבחרו מילים למחיקה."; return; }
+  if(!confirm(`למחוק ${terms.length} מילים? הפעולה תסיר אותן גם מהקובץ words.txt.`)) { msg.classList.add("hidden"); return; }
+  const deleteSet=new Set(terms);
+
+  // make sure we have the raw file text for line-preserving edit
+  if(!rawText && supportsFSA){
+    try{ if(!fileHandle) fileHandle=await IDB.get("wordsHandle");
+      if(fileHandle && await fileHandle.queryPermission({mode:"read"})==="granted"){
+        rawText=await (await fileHandle.getFile()).text();
+      }
+    }catch(e){}
+  }
+
+  allWords = allWords.filter(w=>!deleteSet.has(w.term));
+  const newText = rebuildFileText(deleteSet);
+  rawText = newText;
+  localStorage.setItem("hw_cache", JSON.stringify(allWords));
+  terms.forEach(t=>{ delete assoc[t]; delete stats.words[t]; });
+  localStorage.setItem("hw_assoc", JSON.stringify(assoc));
+  saveStats();
+
+  let wrote=false;
+  try{ wrote=await writeToFile(newText); }catch(e){ wrote=false; }
+  if(wrote){
+    msg.classList.add("ok");
+    msg.textContent = `נמחקו ${terms.length} מילים — גם מהקובץ words.txt. ✓`;
+  }else{
+    downloadText("words.txt", newText);
+    msg.textContent = `המילים הוסרו מהמשחק. הורדתי words.txt מעודכן — החלף בו את הקובץ הישן.`;
+  }
+  reflectBank(allWords.length, null);
+  buildManageList();
+  if(allWords.length===0) $("#startBtn").disabled=true;
+}
+
+$("#manageBtn").addEventListener("click",openManager);
+$("#manageBackBtn").addEventListener("click",()=>{ hide($("#manage")); show(startSec); });
+$("#selAllBtn").addEventListener("click",()=>{ document.querySelectorAll(".del-chk").forEach(c=>c.checked=true); updateSelCount(); });
+$("#selNoneBtn").addEventListener("click",()=>{ document.querySelectorAll(".del-chk").forEach(c=>c.checked=false); updateSelCount(); });
+$("#deleteSelBtn").addEventListener("click",deleteSelected);
+
+$("#exportBtn").addEventListener("click",()=>{
+  hideErr();
+  const keys=Object.keys(assoc).filter(t=>assoc[t]);
+  if(!keys.length){ showErr("אין עדיין אסוציאציות לגיבוי."); return; }
+  const lines=["# גיבוי אסוציאציות","# מילה - אסוציאציה",""];
+  keys.forEach(t=>lines.push(`${t} - ${assoc[t]}`));
+  const blob=new Blob([lines.join("\r\n")],{type:"text/plain;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="associations.txt"; document.body.appendChild(a); a.click();
+  a.remove(); URL.revokeObjectURL(url);
+});
+
+/* ---------- helpers ---------- */
+function show(el){el.classList.remove("hidden")}
+function hide(el){el.classList.add("hidden")}
+function escapeHtml(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+</script>
+</body>
+</html>

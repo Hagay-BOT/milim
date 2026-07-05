@@ -1,0 +1,11 @@
+# large / copyrighted source PDFs — not needed for the site
+*.pdf
+יחידות/**/*.pdf
+
+# local tooling
+.claude/
+scratchpad/
+
+# os
+.DS_Store
+Thumbs.db
