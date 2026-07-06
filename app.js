@@ -17,6 +17,15 @@ let assoc   = LS.get('hw_assoc', {});
 let stats   = (function(){ const s=LS.get('hw_stats',{}); return {words:s.words||{}, sessions:s.sessions||[]}; })();
 let deleted = new Set(LS.get('hw_deleted', []));
 let added   = LS.get('hw_added', []); // [[term,meaning],...]
+let direction = LS.get('hw_dir', 'm2w'); // m2w = פירוש→מילה, w2m = מילה→פירוש, mixed
+const DIRS = [['m2w','פירוש → מילה'],['w2m','מילה → פירוש'],['mixed','מעורב']];
+function renderDirSegs(){
+  ['#dirSegHome','#dirSegScope'].forEach(sel=>{
+    const el=document.querySelector(sel); if(!el) return;
+    el.innerHTML=DIRS.map(([d,l])=>`<button data-dir="${d}" class="${direction===d?'active':''}">${l}</button>`).join('');
+    el.querySelectorAll('button').forEach(b=>b.onclick=()=>{ direction=b.dataset.dir; LS.set('hw_dir',direction); renderDirSegs(); });
+  });
+}
 const saveAssoc   = () => LS.set('hw_assoc', assoc);
 const saveStats   = () => LS.set('hw_stats', stats);
 const saveDeleted = () => LS.set('hw_deleted', [...deleted]);
@@ -101,6 +110,7 @@ function renderHome(){
   const total=BANK.length;
   const uniqTerms=new Set(BANK.map(w=>w.term)).size;
   $('#totalPill').textContent = `${total} מילים · ${uniqTerms} ייחודיות`;
+  renderDirSegs();
   const grid=$('#unitGrid'); grid.innerHTML='';
   UNIT_IDS.forEach(uid=>{
     const c=classify('unit:'+uid);
@@ -139,6 +149,7 @@ function openScope(scope){
   $('#cntAll').textContent=allN;
   $('#pbAllSub').textContent = (scope==='global'||scope==='random')?'מדגם אקראי לתרגול מהיר':'כל מילות היחידה בערבוב';
   $('#pbAll').disabled = c.total===0;
+  renderDirSegs();
   goto('scope');
 }
 $('#pbAll').onclick  = ()=> startRound(allCards(curScope), curScope, 'all');
@@ -158,7 +169,7 @@ function startRound(cards, scope, mode){
   if(!committed && session.size>0) commitSession();
   session=new Map(); committed=false;
   sessionScope=scope; sessionMode=mode;
-  deck=cards.slice(); shuffle(deck);
+  deck=shuffle(cards.slice()).map(c=>({...c, _dir: direction==='mixed' ? (Math.random()<0.5?'m2w':'w2m') : direction}));
   idx=0; correct=0; missed=[];
   $('#quizScope').textContent = scopeTitle(scope);
   goto('quiz'); renderCard();
@@ -169,19 +180,32 @@ function renderCard(){
   $('#progBar').style.width = (100*idx/deck.length)+'%';
   $('#qCount').textContent = `מילה ${idx+1} מתוך ${deck.length}`;
   $('#qLive').textContent = `✓ ${correct}`;
-  $('#qText').textContent = w.meaning;
-  const inp=$('#answerInput'); inp.value=''; inp.disabled=false;
-  show($('#answerActions'));
+  // reset all mode controls
   $('#hintBtn').classList.remove('hidden'); $('#hintBox').classList.add('hidden'); $('#hintBox').textContent='';
   $('#feedback').classList.add('hidden'); $('#feedback').innerHTML='';
-  setTimeout(()=>inp.focus(),30);
+  hide($('#revealBtn')); hide($('#revealMeaning')); $('#revealMeaning').textContent=''; hide($('#gradeActions'));
+  const inp=$('#answerInput');
+  if(w._dir==='w2m'){
+    $('#qKind').textContent='מה פירוש המילה? נסה להיזכר';
+    $('#qText').textContent=w.term;
+    hide($('#answerActions')); inp.classList.add('hidden');
+    show($('#revealBtn'));
+  }else{
+    $('#qKind').textContent='מהו הפירוש? כתוב את המילה';
+    $('#qText').textContent=w.meaning;
+    inp.classList.remove('hidden'); inp.value=''; inp.disabled=false;
+    show($('#answerActions'));
+    setTimeout(()=>inp.focus(),30);
+  }
 }
 function check(){ if(answered) return; finishCard(isCorrect($('#answerInput').value, deck[idx].term), false); }
 function skip(){ if(answered) return; finishCard(false, true); }
 function finishCard(ok, skipped){
   answered=true;
   const w=deck[idx];
+  const w2m = w._dir==='w2m';
   $('#answerInput').disabled=true; hide($('#answerActions'));
+  hide($('#revealBtn')); hide($('#gradeActions'));   // reveal-meaning stays visible for w2m
   $('#hintBtn').classList.add('hidden'); $('#hintBox').classList.add('hidden');
   const e=sess(w); e.attempts++;
   if(ok){ correct++; e.mastered=true; if(e.attempts===1)e.firstTry=true; }
@@ -189,10 +213,11 @@ function finishCard(ok, skipped){
   $('#qLive').textContent=`✓ ${correct}`;
   const fb=$('#feedback');
   const synLine = w.term.match(/[\/|]/)? `<div class="reveal" style="color:var(--ink-soft);font-size:.85rem">מקובל גם חלק מהצורות</div>`:'';
+  const verdict = w2m ? (ok?'יופי — ידעת! ✓':'לא נורא — עכשיו נזכרת') : (ok?'נכון! ✓':(skipped?'הנה המילה:':'לא מדויק'));
   fb.innerHTML =
-    `<div class="verdict ${ok?'ok':'no'}">${ok?'נכון! ✓':(skipped?'הנה המילה:':'לא מדויק')}</div>`+
-    (ok?'':`<div class="reveal">המילה: <b>${esc(w.term)}</b></div>${synLine}`)+
-    (ok?'':`<button class="was-right" id="wasRight">בעצם ידעתי — סמן כנכון</button>`)+
+    `<div class="verdict ${ok?'ok':'no'}">${verdict}</div>`+
+    (!w2m&&!ok?`<div class="reveal">המילה: <b>${esc(w.term)}</b></div>${synLine}`:'')+
+    (!w2m&&!ok?`<button class="was-right" id="wasRight">בעצם ידעתי — סמן כנכון</button>`:'')+
     `<div class="assoc">
        <label>💡 האסוציאציה שלי ל"${esc(w.term)}"</label>
        <textarea id="assocInput" rows="2" placeholder="קישור/תמונה שיעזרו לזכור…">${esc(assoc[w.term]||'')}</textarea>
@@ -245,12 +270,17 @@ function commitSession(){
 
 $('#checkBtn').onclick=check;
 $('#skipBtn').onclick=skip;
+$('#revealBtn').onclick=()=>{ const w=deck[idx]; $('#revealMeaning').textContent=w.meaning; show($('#revealMeaning')); hide($('#revealBtn')); show($('#gradeActions')); };
+$('#gradeYes').onclick=()=>{ if(!answered) finishCard(true,false); };
+$('#gradeNo').onclick=()=>{ if(!answered) finishCard(false,false); };
 $('#answerInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!answered){ e.preventDefault(); check(); } });
 document.addEventListener('keydown',e=>{
-  if(e.key!=='Enter'||!answered) return;
+  if(e.key!=='Enter') return;
   if($('#quiz').classList.contains('hidden')) return;
   if(e.target && e.target.id==='assocInput') return;
-  e.preventDefault(); const n=$('#nextBtn'); if(n) n.click();
+  if(answered){ e.preventDefault(); const n=$('#nextBtn'); if(n) n.click(); return; }
+  const w=deck[idx];   // not answered: in מילה→פירוש, Enter reveals the meaning
+  if(w && w._dir==='w2m'){ const rb=$('#revealBtn'); if(rb && !rb.classList.contains('hidden')){ e.preventDefault(); rb.click(); } }
 });
 $('#hintBtn').onclick=()=>{ const a=assoc[deck[idx].term]; const b=$('#hintBox'); b.textContent=a?('💡 '+a):'עדיין לא כתבת אסוציאציה למילה הזו — תוכל להוסיף אחרי שתענה.'; b.classList.remove('hidden'); };
 $('#quitQuiz').onclick=()=>{ if(!committed&&session.size>0) commitSession(); openScope(sessionScope); };

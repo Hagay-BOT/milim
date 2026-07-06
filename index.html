@@ -48,6 +48,10 @@
   .btn-block{display:block;width:100%}
   .row{display:flex;gap:10px}
   .row>*{flex:1}
+  /* segmented direction control */
+  .seg{display:flex;gap:6px;background:var(--paper-deep);border:1px solid var(--line);border-radius:12px;padding:5px}
+  .seg button{flex:1;border:none;background:transparent;color:var(--ink-soft);font-family:"Heebo";font-weight:700;font-size:.82rem;padding:9px 5px;border-radius:8px;transition:.15s}
+  .seg button.active{background:linear-gradient(180deg,var(--gold),var(--accent));color:#fff;box-shadow:var(--shadow)}
 
   /* HOME */
   .home-head{text-align:center;margin-bottom:6px}
@@ -105,6 +109,7 @@
   .answer-input:disabled{opacity:.75}
   .actions{display:flex;gap:10px;margin-top:16px}
   .actions .btn{flex:1}
+  .reveal-meaning{margin-top:20px;font-family:"Frank Ruhl Libre",serif;font-size:1.3rem;line-height:1.45;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;animation:rise .25s ease}
   .hint-btn{display:block;margin:14px auto 0;background:transparent;border:1px solid var(--line);color:var(--gold);font-family:"Heebo";font-weight:500;font-size:.88rem;padding:8px 18px;border-radius:999px}
   .hint-btn:hover{border-color:var(--gold);background:rgba(201,150,47,.08)}
   .hint-box{margin-top:12px;font-family:"Frank Ruhl Libre",serif;font-size:1.05rem;background:rgba(201,150,47,.1);border:1px dashed var(--gold);border-radius:12px;padding:12px}
@@ -186,6 +191,9 @@
       <div class="totalpill" id="totalPill">—</div>
     </div>
 
+    <div class="section-t">כיוון התרגול</div>
+    <div class="seg" id="dirSegHome"></div>
+
     <div class="section-t">מצב כללי</div>
     <div class="big-tiles">
       <button class="big-tile" data-scope="global"><div class="emoji">📚</div><h3>כל המאגר</h3><p>סטטיסטיקה, חלשות וחדשות מכל היחידות</p></button>
@@ -213,6 +221,7 @@
       <div class="donut" id="donut"><div class="ck"><b id="donutTotal">0</b><span>מילים</span></div></div>
       <div class="legend" id="legend"></div>
     </div>
+    <div class="seg" id="dirSegScope" style="margin-bottom:14px"></div>
     <div class="practice-btns">
       <button class="pbtn" id="pbAll"><div class="ic">🔀</div><div class="tx"><b>תרגל הכל</b><span id="pbAllSub">כל המילים בערבוב</span></div><div class="cnt" id="cntAll">0</div></button>
       <button class="pbtn" id="pbWeak"><div class="ic">💪</div><div class="tx"><b>תרגל חלשות</b><span>מילים שתרגלת וטעית בהן</span></div><div class="cnt" id="cntWeak">0</div></button>
@@ -227,12 +236,18 @@
     <div class="prog"><i id="progBar"></i></div>
     <div class="qmeta"><span id="qCount"></span><span id="qLive"></span></div>
     <div class="card">
-      <div class="q-kind">מהו הפירוש? כתוב את המילה</div>
+      <div class="q-kind" id="qKind">מהו הפירוש? כתוב את המילה</div>
       <div class="q-text" id="qText"></div>
       <input class="answer-input" id="answerInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="המילה…">
       <div class="actions" id="answerActions">
         <button class="btn btn-primary" id="checkBtn">בדיקה</button>
         <button class="btn btn-ghost" id="skipBtn">לא יודע / הצג</button>
+      </div>
+      <button class="btn btn-primary btn-block hidden" id="revealBtn" style="margin-top:22px">הצג פירוש</button>
+      <div class="reveal-meaning hidden" id="revealMeaning"></div>
+      <div class="actions hidden" id="gradeActions">
+        <button class="btn btn-ghost" id="gradeNo">✗ לא ידעתי</button>
+        <button class="btn btn-primary" id="gradeYes">✓ ידעתי</button>
       </div>
       <button class="hint-btn" id="hintBtn">💡 רמז</button>
       <div class="hint-box hidden" id="hintBox"></div>
