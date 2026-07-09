@@ -68,23 +68,28 @@ function scopeWords(scope){
 //   חדשה  = seen==0 (never practiced)
 //   חלשה  = seen>0 && level==0 (practiced but not yet gotten right on a first try)
 //   יודע  = level>=1 (got it right first-try at least once, net) — stays only in "תרגל הכל"
+// counter (level): +1 per correct-first-try, -1 per wrong; a clean first sight jumps to 3.
+//   חדשות = counter 0 (never-seen, or got it wrong and not yet re-learned)
+//   חלשות = counter 1-2 (knew it 1-2 times, on the way to mastery)
+//   שלמדתי = counter >=3 (mastered / knew it on first sight)
+const lvl = term => (stats.words[term]||{}).level || 0;
 function classify(scope){
   const seen=new Set(); let strong=0,weak=0,fresh=0;
   for(const w of scopeWords(scope)){
     if(seen.has(w.term)) continue; seen.add(w.term);
-    const r=stats.words[w.term];
-    if(!r||r.seen===0) fresh++; else if(r.level>=1) strong++; else weak++;
+    const v=lvl(w.term);
+    if(v>=3) strong++; else if(v>=1) weak++; else fresh++;
   }
   return {total:seen.size, strong, weak, fresh};
 }
 function uniqScope(scope){ const seen=new Set(),out=[]; for(const w of scopeWords(scope)){ if(!seen.has(w.term)){seen.add(w.term);out.push(w);} } return out; }
-function newCards(scope){ return uniqScope(scope).filter(w=>{const r=stats.words[w.term];return !r||r.seen===0;}); }
+function newCards(scope){ return uniqScope(scope).filter(w=>lvl(w.term)<1); }
 function weakCards(scope){
-  const arr=uniqScope(scope).filter(w=>{const r=stats.words[w.term];return r&&r.seen>0&&r.level<1;});
-  arr.sort((a,b)=>(stats.words[a.term].last||0)-(stats.words[b.term].last||0));
+  const arr=uniqScope(scope).filter(w=>{const v=lvl(w.term);return v>=1&&v<3;});
+  arr.sort((a,b)=>((stats.words[a.term]||{}).last||0)-((stats.words[b.term]||{}).last||0));
   return arr;
 }
-function learnedCards(scope){ return uniqScope(scope).filter(w=>{const r=stats.words[w.term];return r&&r.seen>0;}); }
+function learnedCards(scope){ return uniqScope(scope).filter(w=>lvl(w.term)>=3); }
 function allCards(scope){
   const w=scopeWords(scope).slice();
   shuffle(w);
@@ -144,7 +149,7 @@ function openScope(scope){
   const gs=100*c.strong/done, gw=100*c.weak/done;
   $('#donut').style.background=`conic-gradient(var(--green) 0 ${gs}%, var(--accent) ${gs}% ${gs+gw}%, var(--gold) ${gs+gw}% 100%)`;
   $('#legend').innerHTML=
-    `<div><i class="s"></i> יודע <b>${c.strong}</b></div>
+    `<div><i class="s"></i> שלמדתי <b>${c.strong}</b></div>
      <div><i class="w"></i> לחיזוק <b>${c.weak}</b></div>
      <div><i class="n"></i> חדשות <b>${c.fresh}</b></div>`;
   const nc=newCards(scope).length, wc=weakCards(scope).length, lc=learnedCards(scope).length;
@@ -270,9 +275,14 @@ function commitSession(){
   const now=Date.now(); let c=0,ft=0,st=0,nw=0;
   entries.forEach(e=>{
     const r=rec(e.w.term);
-    if(r.seen===0) nw++;
+    const wasNew = r.seen===0;
+    if(wasNew) nw++;
     r.seen++;
-    if(e.mastered&&e.firstTry){ r.first++; r.ever++; r.level=Math.min(5,r.level+1); ft++; c++; }
+    if(e.mastered && e.firstTry){                       // knew it (correct on first attempt of the round)
+      r.first++; r.ever++;
+      r.level = wasNew ? 3 : Math.min(3, r.level+1);     // knew on very first sight → straight to "שלמדתי"; else climb toward 3
+      ft++; c++;
+    }
     else if(e.mastered){ r.ever++; r.wrong+=Math.max(0,e.attempts-1); r.level=Math.max(0,r.level-1); st++; c++; }
     else { r.wrong++; r.level=Math.max(0,r.level-1); }
     r.last=now;
