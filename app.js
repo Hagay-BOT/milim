@@ -38,10 +38,17 @@ function buildBank(){
   BANK = [];
   const data = window.UNIT_DATA || {};
   for(const uid of Object.keys(data)){
-    data[uid].forEach((pair,i)=>{
+    const byTerm = new Map();  // merge duplicate terms within a unit (same word, several senses)
+    data[uid].forEach(pair=>{
       const term=pair[0], meaning=pair[1];
       if(deleted.has(term)) return;
-      BANK.push({term, meaning, unit:uid, id:uid+':'+i});
+      if(byTerm.has(term)){
+        const w=byTerm.get(term);
+        if(meaning && !w.meaning.split('; ').includes(meaning)) w.meaning += '; ' + meaning;
+      }else{
+        const w={term, meaning, unit:uid, id:uid+':'+term};
+        byTerm.set(term, w); BANK.push(w);
+      }
     });
   }
   added.forEach((pair,i)=>{
@@ -57,28 +64,27 @@ function scopeWords(scope){
   if(scope.startsWith('unit:')) { const u=scope.slice(5); return BANK.filter(w=>w.unit===u); }
   return BANK;
 }
+// classification (per the learning model):
+//   חדשה  = seen==0 (never practiced)
+//   חלשה  = seen>0 && level==0 (practiced but not yet gotten right on a first try)
+//   יודע  = level>=1 (got it right first-try at least once, net) — stays only in "תרגל הכל"
 function classify(scope){
   const seen=new Set(); let strong=0,weak=0,fresh=0;
   for(const w of scopeWords(scope)){
     if(seen.has(w.term)) continue; seen.add(w.term);
     const r=stats.words[w.term];
-    if(!r||r.seen===0) fresh++; else if(r.level>=3) strong++; else weak++;
+    if(!r||r.seen===0) fresh++; else if(r.level>=1) strong++; else weak++;
   }
   return {total:seen.size, strong, weak, fresh};
 }
-function newCards(scope){
-  const seen=new Set(), out=[];
-  for(const w of scopeWords(scope)){ const r=stats.words[w.term];
-    if((!r||r.seen===0)&&!seen.has(w.term)){ seen.add(w.term); out.push(w); } }
-  return out;
-}
+function uniqScope(scope){ const seen=new Set(),out=[]; for(const w of scopeWords(scope)){ if(!seen.has(w.term)){seen.add(w.term);out.push(w);} } return out; }
+function newCards(scope){ return uniqScope(scope).filter(w=>{const r=stats.words[w.term];return !r||r.seen===0;}); }
 function weakCards(scope){
-  const arr=scopeWords(scope).filter(w=>{const r=stats.words[w.term];return r&&r.seen>0&&r.level<=2;});
-  arr.sort((a,b)=>(stats.words[a.term].level-stats.words[b.term].level)||(stats.words[a.term].last-stats.words[b.term].last));
-  const seen=new Set(), out=[];
-  for(const w of arr){ if(!seen.has(w.term)){ seen.add(w.term); out.push(w); } }
-  return out;
+  const arr=uniqScope(scope).filter(w=>{const r=stats.words[w.term];return r&&r.seen>0&&r.level<1;});
+  arr.sort((a,b)=>(stats.words[a.term].last||0)-(stats.words[b.term].last||0));
+  return arr;
 }
+function learnedCards(scope){ return uniqScope(scope).filter(w=>{const r=stats.words[w.term];return r&&r.seen>0;}); }
 function allCards(scope){
   const w=scopeWords(scope).slice();
   shuffle(w);
@@ -138,13 +144,14 @@ function openScope(scope){
   const gs=100*c.strong/done, gw=100*c.weak/done;
   $('#donut').style.background=`conic-gradient(var(--green) 0 ${gs}%, var(--accent) ${gs}% ${gs+gw}%, var(--gold) ${gs+gw}% 100%)`;
   $('#legend').innerHTML=
-    `<div><i class="s"></i> חזקות <b>${c.strong}</b></div>
+    `<div><i class="s"></i> יודע <b>${c.strong}</b></div>
      <div><i class="w"></i> לחיזוק <b>${c.weak}</b></div>
      <div><i class="n"></i> חדשות <b>${c.fresh}</b></div>`;
-  const nc=newCards(scope).length, wc=weakCards(scope).length;
-  $('#cntNew').textContent=nc; $('#cntWeak').textContent=wc;
+  const nc=newCards(scope).length, wc=weakCards(scope).length, lc=learnedCards(scope).length;
+  $('#cntNew').textContent=nc; $('#cntWeak').textContent=wc; $('#cntLearned').textContent=lc;
   $('#pbNew').disabled = nc===0;
   $('#pbWeak').disabled = wc===0;
+  $('#pbLearned').disabled = lc===0;
   const allN = (scope==='global'||scope==='random')?Math.min(30,c.total):scopeWords(scope).length;
   $('#cntAll').textContent=allN;
   $('#pbAllSub').textContent = (scope==='global'||scope==='random')?'מדגם אקראי לתרגול מהיר':'כל מילות היחידה בערבוב';
@@ -152,10 +159,11 @@ function openScope(scope){
   renderDirSegs();
   goto('scope');
 }
-$('#pbAll').onclick  = ()=> startRound(allCards(curScope), curScope, 'all');
-$('#pbWeak').onclick = ()=> startRound(cap(weakCards(curScope),20), curScope, 'weak');
-$('#pbNew').onclick  = ()=> startRound(cap(newCards(curScope),20), curScope, 'new');
-$('#pbStats').onclick= ()=> openStats(curScope);
+$('#pbAll').onclick     = ()=> startRound(allCards(curScope), curScope, 'all');
+$('#pbWeak').onclick    = ()=> startRound(cap(weakCards(curScope),20), curScope, 'weak');
+$('#pbNew').onclick     = ()=> startRound(cap(newCards(curScope),20), curScope, 'new');
+$('#pbLearned').onclick = ()=> startRound(cap(learnedCards(curScope),30), curScope, 'learned');
+$('#pbStats').onclick   = ()=> openStats(curScope);
 function cap(list,n){ if(list.length>n){ toast(`מתרגל ${n} מתוך ${list.length}`); return list.slice(0,n);} return list; }
 
 /* ===== QUIZ ENGINE ===== */
@@ -180,44 +188,50 @@ function renderCard(){
   $('#progBar').style.width = (100*idx/deck.length)+'%';
   $('#qCount').textContent = `מילה ${idx+1} מתוך ${deck.length}`;
   $('#qLive').textContent = `✓ ${correct}`;
-  // reset all mode controls
   $('#hintBtn').classList.remove('hidden'); $('#hintBox').classList.add('hidden'); $('#hintBox').textContent='';
   $('#feedback').classList.add('hidden'); $('#feedback').innerHTML='';
-  hide($('#revealBtn')); hide($('#revealMeaning')); $('#revealMeaning').textContent=''; hide($('#gradeActions'));
   const inp=$('#answerInput');
+  inp.classList.remove('hidden'); inp.value=''; inp.disabled=false;
+  show($('#answerActions'));
   if(w._dir==='w2m'){
-    $('#qKind').textContent='מה פירוש המילה? נסה להיזכר';
+    $('#qKind').textContent='כתוב את הפירוש של המילה';
     $('#qText').textContent=w.term;
-    hide($('#answerActions')); inp.classList.add('hidden');
-    show($('#revealBtn'));
+    inp.placeholder='הפירוש…';
   }else{
-    $('#qKind').textContent='מהו הפירוש? כתוב את המילה';
+    $('#qKind').textContent='כתוב את המילה לפי הפירוש';
     $('#qText').textContent=w.meaning;
-    inp.classList.remove('hidden'); inp.value=''; inp.disabled=false;
-    show($('#answerActions'));
-    setTimeout(()=>inp.focus(),30);
+    inp.placeholder='המילה…';
   }
+  setTimeout(()=>inp.focus(),30);
 }
-function check(){ if(answered) return; finishCard(isCorrect($('#answerInput').value, deck[idx].term), false); }
+function meaningMatch(input, meaning){
+  const a=norm(input); if(!a) return false;
+  if(a===norm(meaning)) return true;
+  const segs=meaning.split(/[,;/|()]|\s-\s/).map(norm).filter(Boolean);
+  if(segs.includes(a)) return true;
+  if(!a.includes(' ') && a.length>=2) return norm(meaning).split(' ').includes(a);
+  return false;
+}
+function check(){ if(answered) return; const w=deck[idx]; const ok = w._dir==='w2m' ? meaningMatch($('#answerInput').value, w.meaning) : isCorrect($('#answerInput').value, w.term); finishCard(ok, false); }
 function skip(){ if(answered) return; finishCard(false, true); }
 function finishCard(ok, skipped){
   answered=true;
   const w=deck[idx];
   const w2m = w._dir==='w2m';
   $('#answerInput').disabled=true; hide($('#answerActions'));
-  hide($('#revealBtn')); hide($('#gradeActions'));   // reveal-meaning stays visible for w2m
   $('#hintBtn').classList.add('hidden'); $('#hintBox').classList.add('hidden');
   const e=sess(w); e.attempts++;
   if(ok){ correct++; e.mastered=true; if(e.attempts===1)e.firstTry=true; }
   else { missed.push(w); }
   $('#qLive').textContent=`✓ ${correct}`;
   const fb=$('#feedback');
-  const synLine = w.term.match(/[\/|]/)? `<div class="reveal" style="color:var(--ink-soft);font-size:.85rem">מקובל גם חלק מהצורות</div>`:'';
-  const verdict = w2m ? (ok?'יופי — ידעת! ✓':'לא נורא — עכשיו נזכרת') : (ok?'נכון! ✓':(skipped?'הנה המילה:':'לא מדויק'));
+  const answer = w2m ? w.meaning : w.term;    // the correct answer for this direction
+  const label  = w2m ? 'הפירוש' : 'המילה';
+  const verdict = ok?'נכון! ✓':(skipped?'התשובה:':'לא מדויק');
   fb.innerHTML =
     `<div class="verdict ${ok?'ok':'no'}">${verdict}</div>`+
-    (!w2m&&!ok?`<div class="reveal">המילה: <b>${esc(w.term)}</b></div>${synLine}`:'')+
-    (!w2m&&!ok?`<button class="was-right" id="wasRight">בעצם ידעתי — סמן כנכון</button>`:'')+
+    (!ok?`<div class="reveal">${label}: <b>${esc(answer)}</b></div>`:'')+
+    (!ok?`<button class="was-right" id="wasRight">בעצם ידעתי — סמן כנכון</button>`:'')+
     `<div class="assoc">
        <label>💡 האסוציאציה שלי ל"${esc(w.term)}"</label>
        <textarea id="assocInput" rows="2" placeholder="קישור/תמונה שיעזרו לזכור…">${esc(assoc[w.term]||'')}</textarea>
@@ -270,17 +284,12 @@ function commitSession(){
 
 $('#checkBtn').onclick=check;
 $('#skipBtn').onclick=skip;
-$('#revealBtn').onclick=()=>{ const w=deck[idx]; $('#revealMeaning').textContent=w.meaning; show($('#revealMeaning')); hide($('#revealBtn')); show($('#gradeActions')); };
-$('#gradeYes').onclick=()=>{ if(!answered) finishCard(true,false); };
-$('#gradeNo').onclick=()=>{ if(!answered) finishCard(false,false); };
 $('#answerInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!answered){ e.preventDefault(); check(); } });
 document.addEventListener('keydown',e=>{
-  if(e.key!=='Enter') return;
+  if(e.key!=='Enter'||!answered) return;
   if($('#quiz').classList.contains('hidden')) return;
   if(e.target && e.target.id==='assocInput') return;
-  if(answered){ e.preventDefault(); const n=$('#nextBtn'); if(n) n.click(); return; }
-  const w=deck[idx];   // not answered: in מילה→פירוש, Enter reveals the meaning
-  if(w && w._dir==='w2m'){ const rb=$('#revealBtn'); if(rb && !rb.classList.contains('hidden')){ e.preventDefault(); rb.click(); } }
+  e.preventDefault(); const n=$('#nextBtn'); if(n) n.click();
 });
 $('#hintBtn').onclick=()=>{ const a=assoc[deck[idx].term]; const b=$('#hintBox'); b.textContent=a?('💡 '+a):'עדיין לא כתבת אסוציאציה למילה הזו — תוכל להוסיף אחרי שתענה.'; b.classList.remove('hidden'); };
 $('#quitQuiz').onclick=()=>{ if(!committed&&session.size>0) commitSession(); openScope(sessionScope); };

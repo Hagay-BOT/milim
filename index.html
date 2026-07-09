@@ -223,9 +223,10 @@
     </div>
     <div class="seg" id="dirSegScope" style="margin-bottom:14px"></div>
     <div class="practice-btns">
-      <button class="pbtn" id="pbAll"><div class="ic">🔀</div><div class="tx"><b>תרגל הכל</b><span id="pbAllSub">כל המילים בערבוב</span></div><div class="cnt" id="cntAll">0</div></button>
-      <button class="pbtn" id="pbWeak"><div class="ic">💪</div><div class="tx"><b>תרגל חלשות</b><span>מילים שתרגלת וטעית בהן</span></div><div class="cnt" id="cntWeak">0</div></button>
       <button class="pbtn" id="pbNew"><div class="ic">✨</div><div class="tx"><b>מילים חדשות</b><span>מילים שעוד לא תרגלת — ללמוד לראשונה</span></div><div class="cnt" id="cntNew">0</div></button>
+      <button class="pbtn" id="pbWeak"><div class="ic">💪</div><div class="tx"><b>תרגל חלשות</b><span>מילים שתרגלת ולא ידעת</span></div><div class="cnt" id="cntWeak">0</div></button>
+      <button class="pbtn" id="pbLearned"><div class="ic">🎓</div><div class="tx"><b>מילים שלמדתי</b><span>כל המילים שכבר נתקלת בהן — למבחן עצמי</span></div><div class="cnt" id="cntLearned">0</div></button>
+      <button class="pbtn" id="pbAll"><div class="ic">🔀</div><div class="tx"><b>תרגל הכל</b><span id="pbAllSub">כל המילים בערבוב</span></div><div class="cnt" id="cntAll">0</div></button>
       <button class="pbtn" id="pbStats"><div class="ic">📊</div><div class="tx"><b>סטטיסטיקה מפורטת</b><span>חוזק כל מילה + היסטוריה</span></div><div class="cnt">›</div></button>
     </div>
   </section>
@@ -242,12 +243,6 @@
       <div class="actions" id="answerActions">
         <button class="btn btn-primary" id="checkBtn">בדיקה</button>
         <button class="btn btn-ghost" id="skipBtn">לא יודע / הצג</button>
-      </div>
-      <button class="btn btn-primary btn-block hidden" id="revealBtn" style="margin-top:22px">הצג פירוש</button>
-      <div class="reveal-meaning hidden" id="revealMeaning"></div>
-      <div class="actions hidden" id="gradeActions">
-        <button class="btn btn-ghost" id="gradeNo">✗ לא ידעתי</button>
-        <button class="btn btn-primary" id="gradeYes">✓ ידעתי</button>
       </div>
       <button class="hint-btn" id="hintBtn">💡 רמז</button>
       <div class="hint-box hidden" id="hintBox"></div>
