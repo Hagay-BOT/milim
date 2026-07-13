@@ -1,5 +1,5 @@
 /* service worker — offline cache. Bump V to push an update to installed apps. */
-const V = 'hw-v6';
+const V = 'hw-v7';
 const ASSETS = [
   './', './index.html', './app.js', './data.js', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-maskable-512.png'

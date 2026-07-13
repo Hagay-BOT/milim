@@ -31,6 +31,24 @@ const saveStats   = () => LS.set('hw_stats', stats);
 const saveDeleted = () => LS.set('hw_deleted', [...deleted]);
 const saveAdded   = () => LS.set('hw_added', added);
 
+/* canonical word key: same word with/without niqqud (or across units) is ONE word everywhere */
+const K = t => norm(t);
+/* one-time migration: merge existing per-exact-string records into normalized keys.
+   Called from boot (norm/NIQ are defined further down the file). */
+function migrateStores(){
+  if(LS.get('hw_migr',0)>=7) return;
+  const nw={};
+  for(const t in stats.words){
+    const k=K(t), r=stats.words[t];
+    if(!nw[k]) nw[k]={...r};
+    else { const o=nw[k]; o.seen+=r.seen; o.first+=r.first; o.ever+=r.ever; o.wrong+=r.wrong; o.level=Math.max(o.level,r.level); o.last=Math.max(o.last,r.last); }
+  }
+  stats.words=nw; saveStats();
+  const na={}; for(const t in assoc){ const k=K(t); if(assoc[t] && !na[k]) na[k]=assoc[t]; } assoc=na; saveAssoc();
+  deleted=new Set([...deleted].map(K)); saveDeleted();
+  LS.set('hw_migr',7);
+}
+
 /* ===== word bank ===== */
 let BANK = [];
 const UNIT_IDS = ['1','2','3','4','5','6','7','8','9','10'];
@@ -38,27 +56,31 @@ function buildBank(){
   BANK = [];
   const data = window.UNIT_DATA || {};
   for(const uid of Object.keys(data)){
-    const byTerm = new Map();  // merge duplicate terms within a unit (same word, several senses)
+    const byKey = new Map();  // merge duplicate terms within a unit by normalized key (ignores niqqud diffs)
     data[uid].forEach(pair=>{
       const term=pair[0], meaning=pair[1];
-      if(deleted.has(term)) return;
-      if(byTerm.has(term)){
-        const w=byTerm.get(term);
+      const k=K(term);
+      if(deleted.has(k)) return;
+      if(byKey.has(k)){
+        const w=byKey.get(k);
         if(meaning && !w.meaning.split('; ').includes(meaning)) w.meaning += '; ' + meaning;
       }else{
-        const w={term, meaning, unit:uid, id:uid+':'+term};
-        byTerm.set(term, w); BANK.push(w);
+        const w={term, meaning, unit:uid, id:uid+':'+k};
+        byKey.set(k, w); BANK.push(w);
       }
     });
   }
+  const unitKeys=new Set(BANK.map(w=>K(w.term)));
   added.forEach((pair,i)=>{
-    if(deleted.has(pair[0])) return;
+    const k=K(pair[0]);
+    if(deleted.has(k)) return;
+    if(unitKeys.has(k)) return;   // personal word that duplicates a unit word — the unit copy wins
     BANK.push({term:pair[0], meaning:pair[1], unit:'custom', id:'add:'+i});
   });
 }
 
 /* ===== stats model ===== */
-function rec(term){ return stats.words[term] || (stats.words[term]={seen:0,first:0,ever:0,wrong:0,level:0,last:0}); }
+function rec(term){ const k=K(term); return stats.words[k] || (stats.words[k]={seen:0,first:0,ever:0,wrong:0,level:0,last:0}); }
 function scopeWords(scope){
   if(scope==='global'||scope==='random') return BANK;
   if(scope.startsWith('unit:')) { const u=scope.slice(5); return BANK.filter(w=>w.unit===u); }
@@ -72,21 +94,23 @@ function scopeWords(scope){
 //   חדשות = counter 0 (never-seen, or got it wrong and not yet re-learned)
 //   חלשות = counter 1-2 (knew it 1-2 times, on the way to mastery)
 //   שלמדתי = counter >=3 (mastered / knew it on first sight)
-const lvl = term => (stats.words[term]||{}).level || 0;
+const lvl = term => (stats.words[K(term)]||{}).level || 0;
+const lastOf = term => (stats.words[K(term)]||{}).last || 0;
 function classify(scope){
   const seen=new Set(); let strong=0,weak=0,fresh=0;
   for(const w of scopeWords(scope)){
-    if(seen.has(w.term)) continue; seen.add(w.term);
+    const k=K(w.term);
+    if(seen.has(k)) continue; seen.add(k);
     const v=lvl(w.term);
     if(v>=3) strong++; else if(v>=1) weak++; else fresh++;
   }
   return {total:seen.size, strong, weak, fresh};
 }
-function uniqScope(scope){ const seen=new Set(),out=[]; for(const w of scopeWords(scope)){ if(!seen.has(w.term)){seen.add(w.term);out.push(w);} } return out; }
+function uniqScope(scope){ const seen=new Set(),out=[]; for(const w of scopeWords(scope)){ const k=K(w.term); if(!seen.has(k)){seen.add(k);out.push(w);} } return out; }
 function newCards(scope){ return uniqScope(scope).filter(w=>lvl(w.term)<1); }
 function weakCards(scope){
   const arr=uniqScope(scope).filter(w=>{const v=lvl(w.term);return v>=1&&v<3;});
-  arr.sort((a,b)=>((stats.words[a.term]||{}).last||0)-((stats.words[b.term]||{}).last||0));
+  arr.sort((a,b)=>lastOf(a.term)-lastOf(b.term));
   return arr;
 }
 function learnedCards(scope){ return uniqScope(scope).filter(w=>lvl(w.term)>=3); }
@@ -175,7 +199,7 @@ function cap(list,n){ if(list.length>n){ toast(`מתרגל ${n} מתוך ${list.
 let deck=[], idx=0, correct=0, missed=[], answered=false;
 let session=new Map(), sessionScope='global', sessionMode='all', committed=false;
 
-function sess(w){ if(!session.has(w.term)) session.set(w.term,{w,attempts:0,mastered:false,firstTry:false}); return session.get(w.term); }
+function sess(w){ const k=K(w.term); if(!session.has(k)) session.set(k,{w,attempts:0,mastered:false,firstTry:false}); return session.get(k); }
 
 function startRound(cards, scope, mode){
   if(!cards || cards.length===0){ toast('אין מילים לתרגול כאן'); return; }
@@ -239,18 +263,18 @@ function finishCard(ok, skipped){
     (!ok?`<button class="was-right" id="wasRight">בעצם ידעתי — סמן כנכון</button>`:'')+
     `<div class="assoc">
        <label>💡 האסוציאציה שלי ל"${esc(w.term)}"</label>
-       <textarea id="assocInput" rows="2" placeholder="קישור/תמונה שיעזרו לזכור…">${esc(assoc[w.term]||'')}</textarea>
+       <textarea id="assocInput" rows="2" placeholder="קישור/תמונה שיעזרו לזכור…">${esc(assoc[K(w.term)]||'')}</textarea>
        <div class="assoc-bar"><button id="assocSave">שמירה</button><span class="st" id="assocSt"></span></div>
      </div>
      <button class="del-live" id="delLive">🗑 אני מכיר את המילה — מחק מהמאגר</button>
      <div class="actions" style="margin-top:14px"><button class="btn btn-primary" id="nextBtn">${idx+1<deck.length?'הבא ←':'לסיכום'}</button></div>`;
   fb.classList.remove('hidden');
-  function persist(){ const v=$('#assocInput').value.trim(); if(v)assoc[w.term]=v; else delete assoc[w.term]; saveAssoc(); }
+  function persist(){ const v=$('#assocInput').value.trim(); if(v)assoc[K(w.term)]=v; else delete assoc[K(w.term)]; saveAssoc(); }
   $('#assocSave').onclick=()=>{ persist(); $('#assocSt').textContent='נשמר ✓'; };
   $('#assocInput').oninput=()=>$('#assocSt').textContent='';
   $('#nextBtn').onclick=()=>{ persist(); next(); };
   const wr=$('#wasRight'); if(wr) wr.onclick=()=>{ correct++; const i=missed.indexOf(w); if(i>=0)missed.splice(i,1); e.mastered=true; e.firstTry=(e.attempts===1); $('#qLive').textContent=`✓ ${correct}`; wr.remove(); document.querySelector('.verdict').textContent='סומן כנכון ✓'; document.querySelector('.verdict').className='verdict ok'; };
-  $('#delLive').onclick=()=>{ deleteWord(w.term); toast(`"${w.term}" נמחקה`); deck=deck.filter(c=>c.term!==w.term); missed=missed.filter(c=>c.term!==w.term); session.delete(w.term); if(deck.length===0){ finishRound(); return; } if(idx>=deck.length) idx=deck.length-1; next(true); };
+  $('#delLive').onclick=()=>{ const k=K(w.term); deleteWord(w.term); toast(`"${w.term}" נמחקה`); deck=deck.filter(c=>K(c.term)!==k); missed=missed.filter(c=>K(c.term)!==k); session.delete(k); if(deck.length===0){ finishRound(); return; } if(idx>=deck.length) idx=deck.length-1; next(true); };
 }
 function next(stay){
   if(!stay) idx++;
@@ -263,7 +287,7 @@ function finishRound(){
   renderReview();
   goto('results');
 }
-const verdictOf = term => { const e=session.get(term); return !!(e && e.mastered); };
+const verdictOf = term => { const e=session.get(K(term)); return !!(e && e.mastered); };
 function refreshResultCounts(){
   correct = deck.filter(w=>verdictOf(w.term)).length;
   missed  = deck.filter(w=>!verdictOf(w.term));
@@ -284,7 +308,7 @@ function renderReview(){
   list.querySelectorAll('.rev-chip').forEach(chip=>{
     chip.onclick=()=>{
       const row=chip.closest('.rev-row'); const term=row.dataset.t;
-      const e=session.get(term); if(!e) return;
+      const e=session.get(K(term)); if(!e) return;
       const nowOk=!e.mastered;
       e.mastered=nowOk; e.firstTry=nowOk; if(nowOk && e.attempts<1) e.attempts=1;
       row.classList.toggle('wrong', !nowOk);
@@ -326,7 +350,7 @@ document.addEventListener('keydown',e=>{
   if(e.target && e.target.id==='assocInput') return;
   e.preventDefault(); const n=$('#nextBtn'); if(n) n.click();
 });
-$('#hintBtn').onclick=()=>{ const a=assoc[deck[idx].term]; const b=$('#hintBox'); b.textContent=a?('💡 '+a):'עדיין לא כתבת אסוציאציה למילה הזו — תוכל להוסיף אחרי שתענה.'; b.classList.remove('hidden'); };
+$('#hintBtn').onclick=()=>{ const a=assoc[K(deck[idx].term)]; const b=$('#hintBox'); b.textContent=a?('💡 '+a):'עדיין לא כתבת אסוציאציה למילה הזו — תוכל להוסיף אחרי שתענה.'; b.classList.remove('hidden'); };
 $('#quitQuiz').onclick=()=>{ if(!committed&&session.size>0) commitSession(); openScope(sessionScope); };
 $('#retryMissedBtn').onclick=()=>startRound(missed.slice(), sessionScope, sessionMode); // startRound commits the (corrected) session first
 $('#resBackBtn').onclick=()=>{ commitSession(); openScope(sessionScope); };
@@ -342,9 +366,9 @@ function openStats(scope){
   $('#statsBrand').textContent=scopeTitle(scope);
   const body=$('#statsBody');
   const words=scopeWords(scope);
-  const byTerm=new Map(); for(const w of words){ if(!byTerm.has(w.term)) byTerm.set(w.term,w); }
+  const byTerm=new Map(); for(const w of words){ const k=K(w.term); if(!byTerm.has(k)) byTerm.set(k,w); }
   const arr=[...byTerm.values()].sort((a,b)=>{
-    const ra=stats.words[a.term], rb=stats.words[b.term];
+    const ra=stats.words[K(a.term)], rb=stats.words[K(b.term)];
     const la=(!ra||ra.seen===0)?-1:ra.level, lb=(!rb||rb.seen===0)?-1:rb.level;
     return la-lb;
   });
@@ -364,7 +388,7 @@ function openStats(scope){
     html+=`<div class="section-t">היסטוריית משחקים</div><p class="msg" style="color:var(--ink-soft)">עדיין לא סיימת סבב מלא בתחום הזה.</p>`;
   }
   html+=`<div class="section-t">חוזק מילים · מהחלש לחזק</div><div class="strength-list">`+arr.map(w=>{
-    const r=stats.words[w.term]; const isNew=(!r||r.seen===0); const lvl=isNew?0:r.level;
+    const r=stats.words[K(w.term)]; const isNew=(!r||r.seen===0); const lvl=isNew?0:r.level;
     const meta=isNew?'טרם תורגלה':`נראתה ${r.seen}× · ${r.first} ראשונה · ${r.wrong} טעויות`;
     return `<div class="str-row${isNew?' is-new':''}"><div class="str-w"><b>${esc(w.term)}</b><span>${esc(w.meaning)}</span></div><div class="str-meter">${dots(lvl)}<em>${meta}</em></div></div>`;
   }).join('')+`</div>`;
@@ -374,7 +398,7 @@ function openStats(scope){
 $('#statsBack').onclick=()=>openScope(curScope);
 
 /* ===== MANAGE ===== */
-function deleteWord(term){ deleted.add(term); saveDeleted(); delete assoc[term]; saveAssoc(); delete stats.words[term]; saveStats(); buildBank(); }
+function deleteWord(term){ const k=K(term); deleted.add(k); saveDeleted(); delete assoc[k]; saveAssoc(); delete stats.words[k]; saveStats(); buildBank(); }
 let mSel=new Set();
 function renderManage(filter){
   const list=$('#manageList'); const f=norm(filter||'');
@@ -392,7 +416,7 @@ $('#mDelete').onclick=()=>{
   const m=$('#mMsg'); m.classList.remove('hidden'); m.className='msg';
   if(mSel.size===0){ m.textContent='לא נבחרו מילים.'; return; }
   if(!confirm(`למחוק ${mSel.size} מילים? (ניתן לשחזר)`)){ m.classList.add('hidden'); return; }
-  mSel.forEach(t=>{ deleted.add(t); delete assoc[t]; delete stats.words[t]; });
+  mSel.forEach(t=>{ const k=K(t); deleted.add(k); delete assoc[k]; delete stats.words[k]; });
   saveDeleted(); saveAssoc(); saveStats(); buildBank();
   m.className='msg ok'; m.textContent=`נמחקו ${mSel.size} מילים.`; mSel=new Set(); renderManage($('#mSearch').value); renderHome();
 };
@@ -408,7 +432,7 @@ $('#addSave').onclick=()=>{
   const t=$('#addTerm').value.trim(), mn=$('#addMeaning').value.trim();
   const m=$('#addMsg'); m.classList.remove('hidden');
   if(!t||!mn){ m.className='msg err'; m.textContent='צריך גם מילה וגם פירוש.'; return; }
-  added.push([t,mn]); saveAdded(); deleted.delete(t); saveDeleted(); buildBank(); renderHome();
+  added.push([t,mn]); saveAdded(); deleted.delete(K(t)); saveDeleted(); buildBank(); renderHome();
   m.className='msg ok'; m.textContent=`"${t}" נוספה למאגר ✓`; $('#addTerm').value=''; $('#addMeaning').value=''; $('#addTerm').focus();
 };
 
@@ -436,6 +460,7 @@ if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.s
 })();
 
 /* ===== boot ===== */
+migrateStores();
 buildBank();
 renderHome();
 goto('home');
