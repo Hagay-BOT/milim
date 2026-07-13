@@ -256,18 +256,43 @@ function next(stay){
   if(!stay) idx++;
   if(idx>=deck.length) finishRound(); else renderCard();
 }
+// NOTE: stats are committed when LEAVING the results screen, so per-word corrections apply.
 function finishRound(){
-  commitSession();                       // always record this round into stats/history
-  $('#finalScore').textContent=correct;
   $('#finalOf').textContent=`מתוך ${deck.length}`;
   $('#resScope').textContent='→ '+scopeTitle(sessionScope);
-  if(missed.length===0){
-    hide($('#missWrap')); show($('#allGood')); $('#retryMissedBtn').classList.add('hidden');
-  }else{
-    show($('#missWrap')); hide($('#allGood')); $('#retryMissedBtn').classList.remove('hidden');
-    $('#missList').innerHTML=missed.map(w=>`<div class="miss-row"><b>${esc(w.term)}</b><span>${esc(w.meaning)}</span></div>`).join('');
-  }
+  renderReview();
   goto('results');
+}
+const verdictOf = term => { const e=session.get(term); return !!(e && e.mastered); };
+function refreshResultCounts(){
+  correct = deck.filter(w=>verdictOf(w.term)).length;
+  missed  = deck.filter(w=>!verdictOf(w.term));
+  $('#finalScore').textContent=correct;
+  $('#missCount').textContent=missed.length;
+  $('#allGood').classList.toggle('hidden', missed.length!==0);
+  $('#retryMissedBtn').classList.toggle('hidden', missed.length===0);
+}
+function renderReview(){
+  refreshResultCounts();
+  const list=$('#reviewList');
+  list.innerHTML=deck.map(w=>{
+    const ok=verdictOf(w.term);
+    return `<div class="rev-row ${ok?'':'wrong'}" data-t="${esc(w.term)}">
+      <div class="rev-w"><b>${esc(w.term)}</b><span>${esc(w.meaning)}</span></div>
+      <button class="rev-chip ${ok?'ok':'no'}">${ok?'✓ ידעתי':'✗ לא ידעתי'}</button></div>`;
+  }).join('');
+  list.querySelectorAll('.rev-chip').forEach(chip=>{
+    chip.onclick=()=>{
+      const row=chip.closest('.rev-row'); const term=row.dataset.t;
+      const e=session.get(term); if(!e) return;
+      const nowOk=!e.mastered;
+      e.mastered=nowOk; e.firstTry=nowOk; if(nowOk && e.attempts<1) e.attempts=1;
+      row.classList.toggle('wrong', !nowOk);
+      chip.className='rev-chip '+(nowOk?'ok':'no');
+      chip.textContent=nowOk?'✓ ידעתי':'✗ לא ידעתי';
+      refreshResultCounts();
+    };
+  });
 }
 function commitSession(){
   if(committed) return;
@@ -303,8 +328,12 @@ document.addEventListener('keydown',e=>{
 });
 $('#hintBtn').onclick=()=>{ const a=assoc[deck[idx].term]; const b=$('#hintBox'); b.textContent=a?('💡 '+a):'עדיין לא כתבת אסוציאציה למילה הזו — תוכל להוסיף אחרי שתענה.'; b.classList.remove('hidden'); };
 $('#quitQuiz').onclick=()=>{ if(!committed&&session.size>0) commitSession(); openScope(sessionScope); };
-$('#retryMissedBtn').onclick=()=>startRound(missed.slice(), sessionScope, sessionMode);
-$('#resBackBtn').onclick=()=>openScope(sessionScope);
+$('#retryMissedBtn').onclick=()=>startRound(missed.slice(), sessionScope, sessionMode); // startRound commits the (corrected) session first
+$('#resBackBtn').onclick=()=>{ commitSession(); openScope(sessionScope); };
+$('#resScope').onclick=()=>{ commitSession(); openScope(sessionScope); };
+// safety net: if the app is closed/backgrounded on the results screen, still record the round
+window.addEventListener('pagehide', ()=>{ if(!committed && session.size>0) commitSession(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden' && !committed && session.size>0) commitSession(); });
 
 /* ===== STATS screen ===== */
 function fmt(t){ const d=new Date(t); return d.toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit'})+' · '+d.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}); }
@@ -393,7 +422,7 @@ $('#exportBtn').onclick=()=>{
 };
 
 /* ===== nav ===== */
-document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>{ renderHome(); goto('home'); });
+document.querySelectorAll('[data-home]').forEach(b=>b.onclick=()=>{ if(!committed && session.size>0) commitSession(); renderHome(); goto('home'); });
 document.querySelectorAll('[data-scope]').forEach(b=>b.onclick=()=>openScope(b.dataset.scope));
 
 /* ===== PWA ===== */

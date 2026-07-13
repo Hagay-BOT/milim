@@ -140,6 +140,17 @@
   .miss-row b{font-family:"Frank Ruhl Libre",serif;min-width:34%}
   .miss-row span{color:var(--ink-soft);font-size:.88rem}
 
+  /* end-of-quiz review (correct verdicts per word) */
+  .review-list{display:flex;flex-direction:column;gap:7px;max-height:440px;overflow:auto;margin-top:8px}
+  .rev-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 13px}
+  .rev-row.wrong{border-color:var(--accent);background:rgba(181,72,46,.05)}
+  .rev-w{flex:1;min-width:0}
+  .rev-w b{font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:1.02rem;display:block}
+  .rev-w span{color:var(--ink-soft);font-size:.8rem;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rev-chip{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-family:"Heebo";font-weight:700;font-size:.82rem;transition:.15s;background:transparent}
+  .rev-chip.ok{color:var(--green);border-color:var(--green);background:rgba(78,125,78,.09)}
+  .rev-chip.no{color:var(--accent);border-color:var(--accent);background:rgba(181,72,46,.09)}
+
   /* strength list */
   .strength-list{display:flex;flex-direction:column;gap:7px;max-height:360px;overflow:auto;margin-top:8px}
   .str-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 13px}
@@ -258,10 +269,11 @@
       <div class="score-num" id="finalScore">0</div>
       <div class="score-of" id="finalOf"></div>
     </div>
-    <div id="missWrap"><div class="section-t">כדאי לחזור על אלו</div><div class="miss-list" id="missList"></div></div>
-    <p class="msg ok hidden" id="allGood">מושלם — לא פספסת אף מילה! 🎉</p>
+    <div class="section-t">עבור על התשובות — לחץ ✓/✗ כדי לתקן</div>
+    <div class="review-list" id="reviewList"></div>
+    <p class="msg ok hidden" id="allGood">מושלם — ידעת את כולן! 🎉</p>
     <div class="actions" style="margin-top:22px">
-      <button class="btn btn-primary" id="retryMissedBtn">תרגל את הטעויות</button>
+      <button class="btn btn-primary" id="retryMissedBtn">תרגל את מה שלא ידעתי (<span id="missCount">0</span>)</button>
       <button class="btn btn-ghost" id="resBackBtn">חזרה</button>
     </div>
   </section>
