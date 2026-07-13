@@ -319,7 +319,7 @@ function commitSession(){
 
 $('#checkBtn').onclick=check;
 $('#skipBtn').onclick=skip;
-$('#answerInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!answered){ e.preventDefault(); check(); } });
+$('#answerInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!answered){ e.preventDefault(); e.stopPropagation(); check(); } });
 document.addEventListener('keydown',e=>{
   if(e.key!=='Enter'||!answered) return;
   if($('#quiz').classList.contains('hidden')) return;
